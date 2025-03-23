@@ -3,7 +3,7 @@ from .models import *
 
 admin.site.register(Product)
 admin.site.register(Inventory)
-admin.site.register(User)
+admin.site.register(AppUser)
 admin.site.register(Task)
 admin.site.register(DocumentType)
 admin.site.register(Document)

@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import User
 
 # Topology models
 
@@ -7,29 +8,48 @@ class Warehouse(models.Model):
   code = models.CharField(max_length=45)
   address = models.CharField(max_length=45)
 
+  class Meta:
+    verbose_name_plural = 'Warehouses'
+
 class Department(models.Model):
   number = models.CharField(max_length=45)
   name = models.CharField(max_length=45)
   refrigeration_mode = models.IntegerField()
+  is_not_topologed = models.BooleanField(default=True)
   warehouse = models.ForeignKey(Warehouse, on_delete=models.CASCADE)
+
+  class Meta:
+    verbose_name_plural = 'Departments'
 
 class Row(models.Model):
   number = models.CharField(max_length=45)
   department = models.ForeignKey(Department, on_delete=models.CASCADE)
 
+  class Meta:
+    verbose_name_plural = 'Rows'
+
 class Section(models.Model):
   number = models.CharField(max_length=45)
   row = models.ForeignKey(Row, on_delete=models.CASCADE)
 
+  class Meta:
+    verbose_name_plural = 'Sections'
+
 class Level(models.Model):
   number = models.CharField(max_length=45)
   section = models.ForeignKey(Section, on_delete=models.CASCADE)
+
+  class Meta:
+    verbose_name_plural = 'Levels'
 
 class Cell(models.Model):
   number = models.IntegerField()
   barcode = models.CharField(max_length=45)
   type = models.IntegerField()
   level = models.ForeignKey(Level, on_delete=models.CASCADE)
+
+  class Meta:
+    verbose_name_plural = 'Cells'
 
 # Inventory models
 
@@ -38,10 +58,17 @@ class Product(models.Model):
   unit_price = models.DecimalField(max_digits=10, decimal_places=2)
   weight = models.DecimalField(max_digits=10, decimal_places=2)
   ean = models.CharField(max_length=13)
-  scu = models.CharField(max_length=20)
-  description = models.CharField(max_length=45)
+  sku = models.CharField(max_length=20)
+  image = models.ImageField(upload_to='products/', null=True, blank=True)
+  description = models.CharField(max_length=45, null=True, blank=True)
   package_of_product = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True)
   package_max_quantity = models.IntegerField(null=True, blank=True)
+
+  class Meta:
+    verbose_name_plural = 'Products'
+
+  def __str__(self):
+    return self.name + ' (' + self.sku + ')'
 
 class Inventory(models.Model):
   product = models.ForeignKey(Product, on_delete=models.CASCADE)
@@ -53,14 +80,18 @@ class Inventory(models.Model):
   moved_at = models.DateTimeField(auto_now=True)
   checked_at = models.DateTimeField(auto_now=True)
 
+  class Meta:
+    verbose_name_plural = 'Inventories'
+
 # Administrative models
 
-class User(models.Model):
-  login = models.CharField(max_length=45)
-  password = models.CharField(max_length=45)
-  first_name = models.CharField(max_length=45)
-  last_name = models.CharField(max_length=45)
-  role = models.IntegerField()
+class AppUser(models.Model):
+  user = models.OneToOneField(User, on_delete=models.CASCADE)
+  role = models.CharField(max_length=10)
+  warehouse = models.ForeignKey(Warehouse, on_delete=models.CASCADE)
+
+  class Meta: 
+    verbose_name_plural = 'AppUsers'
 
 class DocumentType(models.Model):
   group = models.CharField(max_length=45)
@@ -69,6 +100,9 @@ class DocumentType(models.Model):
   name = models.CharField(max_length=45)
   description = models.CharField(max_length=45, null=True, blank=True)
   is_requiring_verification = models.BooleanField()
+
+  class Meta:
+    verbose_name_plural = 'DocumentTypes'
 
 class Document(models.Model):
   type = models.ForeignKey(DocumentType, on_delete=models.CASCADE)
@@ -83,28 +117,37 @@ class Document(models.Model):
   updated_at = models.DateTimeField(null=True, blank=True)
   ended_at = models.DateTimeField(null=True, blank=True)
   required_at = models.DateTimeField(null=True, blank=True)
-  verified_by = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True, related_name='document_verifier')
-  created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='document_creator')
+  verified_by = models.ForeignKey(AppUser, on_delete=models.CASCADE, null=True, blank=True, related_name='document_verifier')
+  created_by = models.ForeignKey(AppUser, on_delete=models.CASCADE, related_name='document_creator')
   status = models.CharField(max_length=45, null=True, blank=True)
   linked_document = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True)
 
+  class Meta:
+    verbose_name_plural = 'Documents'
+
 class Task(models.Model):
-    document_type = models.ForeignKey(DocumentType, on_delete=models.CASCADE, null=True, blank=True)
-    assigned_by = models.ForeignKey(User, on_delete=models.CASCADE)
-    inventory = models.ForeignKey(Inventory, on_delete=models.CASCADE, null=True, blank=True)
-    first_cell = models.ForeignKey(Cell, on_delete=models.CASCADE, null=True, blank=True, related_name='first_cell')
-    second_cell = models.ForeignKey(Cell, on_delete=models.CASCADE, null=True, blank=True, related_name='second_cell')
-    document = models.ForeignKey(Document, on_delete=models.CASCADE, null=True, blank=True)
-    status = models.CharField(max_length=45)
-    created_at = models.DateTimeField(auto_now_add=True)
-    started_at = models.DateTimeField(auto_now=True)
-    completed_at = models.DateTimeField(auto_now=True)
+  document_type = models.ForeignKey(DocumentType, on_delete=models.CASCADE, null=True, blank=True)
+  assigned_by = models.ForeignKey(AppUser, on_delete=models.CASCADE)
+  inventory = models.ForeignKey(Inventory, on_delete=models.CASCADE, null=True, blank=True)
+  first_cell = models.ForeignKey(Cell, on_delete=models.CASCADE, null=True, blank=True, related_name='first_cell')
+  second_cell = models.ForeignKey(Cell, on_delete=models.CASCADE, null=True, blank=True, related_name='second_cell')
+  document = models.ForeignKey(Document, on_delete=models.CASCADE, null=True, blank=True)
+  status = models.CharField(max_length=45)
+  created_at = models.DateTimeField(auto_now_add=True)
+  started_at = models.DateTimeField(auto_now=True)
+  completed_at = models.DateTimeField(auto_now=True)
+
+  class Meta:
+    verbose_name_plural = 'Tasks'
 
 # Docs has Products
 
-class Documents_has_Products(models.Model):
+class Document_has_Product(models.Model):
   product = models.ForeignKey(Product, on_delete=models.CASCADE)
   document = models.ForeignKey(Document, on_delete=models.CASCADE)
-  amount_required = models.IntegerField()
   amount_added = models.IntegerField()
+  amount_required = models.IntegerField(null=True, blank=True)
   unit_price = models.DecimalField(max_digits=10, decimal_places=2)
+
+  class Meta:
+    verbose_name_plural = 'Documents_has_Products'
