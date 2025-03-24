@@ -4,29 +4,38 @@ from django.contrib.auth.models import User
 # Topology models
 
 class Warehouse(models.Model):
-  name = models.CharField(max_length=45)
-  code = models.CharField(max_length=45)
+  name = models.CharField(max_length=45, unique=True)
+  code = models.CharField(max_length=45, unique=True)
   address = models.CharField(max_length=45)
 
   class Meta:
     verbose_name_plural = 'Warehouses'
 
+  def __str__(self):
+    return self.name + ' (' + self.code + ')'
+
 class Department(models.Model):
   number = models.CharField(max_length=45)
   name = models.CharField(max_length=45)
-  refrigeration_mode = models.IntegerField()
+  refrigeration_mode = models.IntegerField(null=True, blank=True)
   is_not_topologed = models.BooleanField(default=True)
   warehouse = models.ForeignKey(Warehouse, on_delete=models.CASCADE)
 
   class Meta:
     verbose_name_plural = 'Departments'
 
+  def __str__(self):
+    return self.name + ' - ' + self.warehouse.name
+
 class Row(models.Model):
-  number = models.CharField(max_length=45)
+  number = models.IntegerField()
   department = models.ForeignKey(Department, on_delete=models.CASCADE)
 
   class Meta:
     verbose_name_plural = 'Rows'
+
+  def __str__(self):
+    return str(self.number) + ' - ' + self.department.name + ' - ' + self.department.warehouse.name
 
 class Section(models.Model):
   number = models.CharField(max_length=45)
@@ -57,8 +66,8 @@ class Product(models.Model):
   name = models.CharField(max_length=100)
   unit_price = models.DecimalField(max_digits=10, decimal_places=2)
   weight = models.DecimalField(max_digits=10, decimal_places=2)
-  ean = models.CharField(max_length=13)
-  sku = models.CharField(max_length=20)
+  ean = models.CharField(max_length=12, unique=True)
+  sku = models.CharField(max_length=45, unique=True)
   image = models.ImageField(upload_to='products/', null=True, blank=True)
   description = models.CharField(max_length=45, null=True, blank=True)
   package_of_product = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True)
@@ -104,9 +113,12 @@ class DocumentType(models.Model):
   class Meta:
     verbose_name_plural = 'DocumentTypes'
 
+  def __str__(self):
+    return self.group + " -- " + self.symbol + " " + self.name
+
 class Document(models.Model):
   type = models.ForeignKey(DocumentType, on_delete=models.CASCADE)
-  number = models.CharField(max_length=45)
+  number = models.CharField(max_length=45, unique=True)
   original_warehouse = models.ForeignKey(Warehouse, on_delete=models.CASCADE, related_name='original_warehouse')
   destination_warehouse = models.ForeignKey(Warehouse, on_delete=models.CASCADE, null=True, blank=True, related_name='destination_warehouse')
   total_quantity = models.IntegerField(null=True, blank=True)
