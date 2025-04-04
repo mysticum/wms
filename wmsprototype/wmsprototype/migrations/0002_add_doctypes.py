@@ -1,166 +1,161 @@
-# Generated manually based on new documentation provided on 2025-04-03
-# WARNING: The reverse operation of this migration will delete ALL entries
-# in the DocumentType table, not just the ones created here. Use with caution.
-
 from django.db import migrations
 
 def create_updated_document_types(apps, schema_editor):
     """Creates DocumentType instances based on the new documentation."""
     DocumentType = apps.get_model('wmsprototype', 'DocumentType')
 
-    # --- Skladové operácie ---
+    # --- Sklád ---
     DocumentType.objects.create(
-        group="Skladové operácie",
+        group="Sklád",
         symbol="BO",
         name="Počiatočný stav",
         description="",
-        is_for_managers=False,
+        is_for_managers=True,
     )
     DocumentType.objects.create(
-        group="Skladové operácie",
+        group="Sklád",
         symbol="MM",
         name="Presun v rámci skladu",
         description="",
         is_for_managers=False,
     )
     DocumentType.objects.create(
-        group="Skladové operácie",
+        group="Sklád",
         symbol="FV",
         name="Expedícia mimo systému",
         description="",
         is_for_managers=False,
     )
     DocumentType.objects.create(
-        group="Skladové operácie",
+        group="Sklád",
         symbol="IC+",
         name="Výsledok čiastočnej inventúry: úplný prebytok",
         description="",
         is_for_managers=False,
     )
     DocumentType.objects.create(
-        group="Skladové operácie",
+        group="Sklád",
         symbol="IC-",
         name="Výsledok pĺnej inventúry: manko",
         description="",
         is_for_managers=False,
     )
     DocumentType.objects.create(
-        group="Skladové operácie",
+        group="Sklád",
         symbol="IP+",
         name="Výsledok pĺnej inventúry: prebytok",
         description="",
         is_for_managers=False,
     )
     DocumentType.objects.create(
-        group="Skladové operácie",
+        group="Sklád",
         symbol="IP-",
         name="Výsledok pĺnej inventúry: manko",
         description="",
         is_for_managers=False, # Generuje sa automaticky
     )
     DocumentType.objects.create(
-        group="Skladové operácie",
+        group="Sklád",
         symbol="WM-",
         name="Odpis pre presun",
         description="",
         is_for_managers=False,
     )
     DocumentType.objects.create(
-        group="Skladové operácie",
+        group="Sklád",
         symbol="WM+",
         name="Príjem po presune",
         description="",
         is_for_managers=False,
     )
     DocumentType.objects.create(
-        group="Skladové operácie",
+        group="Sklád",
         symbol="NN+",
         name="Neplánovaný príjem",
         description="",
         is_for_managers=False,
     )
     DocumentType.objects.create(
-        group="Skladové operácie",
+        group="Sklád",
         symbol="NN-",
         name="Neplánovaný výdaj",
         description="",
         is_for_managers=False,
     )
     DocumentType.objects.create(
-        group="Skladové operácie",
+        group="Sklád",
         symbol="PZ",
         name="Príjem z externého zdroja",
         description="",
         is_for_managers=False,
     )
     DocumentType.objects.create(
-        group="Skladové operácie",
+        group="Sklád",
         symbol="RW",
         name="Výdaj pred požiadavkou / Predpredajná reklamácia",
         description="",
         is_for_managers=False,
     )
     DocumentType.objects.create(
-        group="Skladové operácie",
+        group="Sklád",
         symbol="US+",
         name="Korekcia stavu zásob (+)",
         description="",
         is_for_managers=True, # Explicitne uvedené "Len pre manažérov"
     )
     DocumentType.objects.create(
-        group="Skladové operácie",
+        group="Sklád",
         symbol="US-",
         name="Korekcia stavu zásob (-)",
         description="",
         is_for_managers=True, # Explicitne uvedené "Len pre manažérov"
     )
     DocumentType.objects.create(
-        group="Skladové operácie",
+        group="Sklád",
         symbol="WZ",
         name="Vrátenie dodávateľovi",
         description="",
         is_for_managers=False, # Storno môže byť len pre manažéra, ale typ ako taký nie
     )
     DocumentType.objects.create(
-        group="Skladové operácie",
+        group="Sklád",
         symbol="ZB",
         name="Balík zberača (Inventúra)",
         description="",
         is_for_managers=False,
     )
 
-    # --- Externé úlohy ---
-    # Poznámka v dokumentácii: "Generovanie a uzatváranie len pre manažérov!"
+    # --- Úlohy ---
     DocumentType.objects.create(
-        group="Externé úlohy",
+        group="Úlohy",
         symbol="BMO",
         name="Príkaz na presun v rámci skladu",
         description="",
         is_for_managers=True,
     )
     DocumentType.objects.create(
-        group="Externé úlohy",
+        group="Úlohy",
         symbol="ICO",
         name="Príkaz na úplnú inventúru",
         description="",
         is_for_managers=True,
     )
     DocumentType.objects.create(
-        group="Externé úlohy",
+        group="Úlohy",
         symbol="IPO",
         name="Príkaz na čiastočnú inventúru",
         description="",
         is_for_managers=True,
     )
     DocumentType.objects.create(
-        group="Externé úlohy",
+        group="Úlohy",
         symbol="TRO",
         name="Príkaz na presun medzi skladmi",
         description="",
         is_for_managers=True,
     )
     DocumentType.objects.create(
-        group="Externé úlohy",
+        group="Úlohy",
         symbol="FVO",
         name="Príkaz na expedíciu mimo systému",
         description="",
@@ -181,7 +176,6 @@ def delete_all_document_types(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        # Nahraď 'XXXX' skutočným číslom predchádzajúcej migrácie, ak je iné
         ('wmsprototype', '0001_initial'),
     ]
 

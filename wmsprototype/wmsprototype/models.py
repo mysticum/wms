@@ -338,6 +338,12 @@ class Document(models.Model):
     def __str__(self):
         doc_type_symbol = self.document_type.symbol if self.document_type else 'N/A'
         return f"Doc {self.document_number} (Type: {doc_type_symbol})"
+    
+    def update_status(self, status):
+        self.current_status = status.name
+        self.save()
+
+    
 
 class DocumentProduct(models.Model):
     document = models.ForeignKey(
