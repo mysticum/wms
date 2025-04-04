@@ -104,8 +104,10 @@ class Section(models.Model):
         db_table = 'Sections'
 
     def __str__(self):
-        row_num = self.row.number if self.row else 'N/A'
-        return f"Section {self.number} (Row: {row_num})"
+        row_num = self.row.number
+        dept_name = self.row.department.name
+        wh_name = self.row.department.warehouse.name
+        return f"Section {self.number} ({row_num}-{dept_name}-{wh_name})"
 
 
 class Level(models.Model):
@@ -122,8 +124,11 @@ class Level(models.Model):
         db_table = 'Levels'
 
     def __str__(self):
-        section_num = self.section.number if self.section else 'N/A'
-        return f"Level {self.number} (Section: {section_num})"
+        section_num = self.section.number
+        row_num = self.section.row.number
+        dept_name = self.section.row.department.name
+        wh_name = self.section.row.department.warehouse.name
+        return f"Level {self.number}-{section_num}-{row_num}-{dept_name}-{wh_name}"
 
 class Cell(models.Model):
     number = models.IntegerField()
@@ -141,8 +146,12 @@ class Cell(models.Model):
         db_table = 'Cells'
 
     def __str__(self):
-        level_num = self.level.number if self.level else 'N/A'
-        return f"Cell {self.number} (Level: {level_num}, Barcode: {self.barcode or 'None'})"
+        level_num = self.level.number
+        section_num = self.level.section.number
+        row_num = self.level.section.row.number
+        dept_name = self.level.section.row.department.name
+        wh_name = self.level.section.row.department.warehouse.name
+        return f"Cell {self.number}-{level_num}-{section_num}-{row_num}-{dept_name}-{wh_name} {self.barcode or ""}"
 
 class Product(models.Model):
     name = models.CharField(max_length=255)
@@ -252,7 +261,7 @@ class Document(models.Model):
         on_delete=models.PROTECT,
         db_column='document_type_id'
     )
-    document_number = models.IntegerField()
+    number = models.IntegerField()
     barcode = models.CharField(max_length=45)
     origin_department = models.ForeignKey(
         Department,
