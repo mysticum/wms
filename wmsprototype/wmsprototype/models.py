@@ -176,7 +176,7 @@ class Product(models.Model):
         db_table = 'Products'
 
     def __str__(self):
-        return f"{self.name} ({self.sku or 'No SKU'})"
+        return f"{self.ean} {self.name} ({self.sku or 'No SKU'})"
 
 class Inventory(models.Model):
     product = models.ForeignKey(
@@ -261,7 +261,7 @@ class Document(models.Model):
         on_delete=models.PROTECT,
         db_column='document_type_id'
     )
-    number = models.IntegerField()
+    document_number = models.IntegerField()
     barcode = models.CharField(max_length=45)
     origin_department = models.ForeignKey(
         Department,
@@ -346,7 +346,7 @@ class Document(models.Model):
 
     def __str__(self):
         doc_type_symbol = self.document_type.symbol if self.document_type else 'N/A'
-        return f"Doc {self.document_number} (Type: {doc_type_symbol})"
+        return f"{self.barcode}"
     
     def update_status(self, status):
         self.current_status = status.name

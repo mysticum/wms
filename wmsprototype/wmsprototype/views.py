@@ -18,7 +18,7 @@ def actions(request):
 
 def select_document_type(request):
   """View for selecting document type before proceeding to create a specific document"""
-  document_types = DocumentType.objects.all()
+  document_types = DocumentType.objects.all().order_by('group', 'symbol')
   
   context = {
       'document_types': document_types,

@@ -24,8 +24,8 @@ class DocumentService:
         return count
     
     @staticmethod
-    def generate_barcode(document_type, document_number, document_year, document_month, document_department_id):
-        barcode_value = f"{document_type.symbol}/{document_number}/{document_year}{document_month}/{document_department_id}"
+    def generate_barcode(document_type, document_number, document_year, document_month, document_department_number):
+        barcode_value = f"{document_type.symbol}/{document_number}/{document_year}{document_month}/{document_department_number}"
         return barcode_value
     
     @staticmethod
@@ -95,8 +95,8 @@ class DocumentService:
                     document.document_type, 
                     ("0" * (4 - len(str(document.document_number))) + str(document.document_number)),
                     str(timezone.now().year)[-2:],
-                    timezone.now().month,
-                    document.origin_department.id
+                    ("0" * (2 - len(str(timezone.now().month))) + str(timezone.now().month)),
+                    document.origin_department.number
                 )
             
             # Set current status if not already set
@@ -105,7 +105,7 @@ class DocumentService:
 
             # Apply changes if document is final
             if document.document_type.group == "Sklád":
-                apply_document_changes(document)
+                DocumentService.apply_document_changes(document)
 
             
         
