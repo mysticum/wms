@@ -25,4 +25,6 @@ urlpatterns = [
     path("home/", views.home, name="home"),
     path("actions/", views.actions, name="actions"),
     path("document/<int:document_id>/", views.actions, name="view_document"),
+    path("document/new/", views.select_document_type, name="new_document"),
+    path("document/new/<str:doc_type>/", views.create_specific_document, name="create_specific_document")
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

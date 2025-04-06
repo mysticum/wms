@@ -306,7 +306,7 @@ class Document(models.Model):
         related_name='verified_documents',
         db_column='verified_by_id'
     )
-    current_status = models.CharField(max_length=45)
+    current_status = models.CharField(max_length=45, default="Created")
     linked_document = models.ForeignKey(
         'self',
         on_delete=models.SET_NULL,

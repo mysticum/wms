@@ -1,0 +1,44 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container mt-4">
+  <h1 class="mb-4">Select Document Type</h1>
+  
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }}" role="alert">
+        {{ message }}
+      </div>
+    {% endfor %}
+  {% endif %}
+  
+  <div class="row">
+    {% for type in document_types %}
+      <div class="col-md-4 mb-4">
+        <div class="card h-100">
+          <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">{{ type.name }}</h5>
+          </div>
+          <div class="card-body">
+            <p><strong>Symbol:</strong> {{ type.symbol }}</p>
+            <p class="card-text">{{ type.description|default:"No description available" }}</p>
+            <a href="{% url 'create_specific_document' doc_type=type.symbol %}" class="btn btn-primary stretched-link">Select</a>
+          </div>
+        </div>
+      </div>
+    {% empty %}
+      <div class="col-12">
+        <div class="alert alert-warning">
+          <p>No document types found. Please contact the administrator.</p>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+  
+  <div class="row mt-3">
+    <div class="col-12">
+      <a href="{% url 'actions' %}" class="btn btn-secondary">Back to Actions</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

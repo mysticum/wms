@@ -1,0 +1,466 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container mt-4">
+  <h1 class="mb-4">Create {{ document_type.name }} Document</h1>
+  
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }}" role="alert">
+        {{ message }}
+      </div>
+    {% endfor %}
+  {% endif %}
+  
+  <form method="post" action="{% url 'create_specific_document' doc_type=document_type.symbol %}">
+    {% csrf_token %}
+    
+    <div class="row">
+      <!-- Document Basic Information -->
+      <div class="col-md-6 mb-4">
+        <div class="card">
+          <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Document Information</h5>
+          </div>
+          <div class="card-body">
+            <!-- Document Type (display only) -->
+            <div class="form-group mb-3">
+              <label>Document Type</label>
+              <input type="text" class="form-control" value="{{ document_type.name }} ({{ document_type.symbol }})" readonly>
+            </div>
+            
+            <!-- Origin Department -->
+            {% if document_type.symbol != 'IC+' and document_type.symbol != 'IC-' and document_type.symbol != 'IP+' and document_type.symbol != 'IP-' %}
+            <div class="form-group mb-3">
+              <label for="origin_department">Origin Department{% if document_type.symbol != 'IC+' and document_type.symbol != 'IC-' and document_type.symbol != 'IP+' and document_type.symbol != 'IP-' %}*{% endif %}</label>
+              <select class="form-control" id="origin_department" name="origin_department" {% if document_type.symbol != 'IC+' and document_type.symbol != 'IC-' and document_type.symbol != 'IP+' and document_type.symbol != 'IP-' %}required{% endif %}>
+                <option value="">Select Origin Department</option>
+                {% for dept in departments %}
+                  <option value="{{ dept.id }}">{{ dept.name }} - {{ dept.warehouse.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            {% endif %}
+            
+            <!-- Destination Department -->
+            {% if document_type.symbol == 'MM+' or document_type.symbol == 'MM-' or document_type.symbol == 'FV' %}
+            <div class="form-group mb-3">
+              <label for="destinate_department">Destination Department{% if document_type.symbol == 'FV' %}*{% endif %}</label>
+              <select class="form-control" id="destinate_department" name="destinate_department" {% if document_type.symbol == 'FV' %}required{% endif %}>
+                <option value="">Select Destination Department</option>
+                {% for dept in departments %}
+                  <option value="{{ dept.id }}">{{ dept.name }} - {{ dept.warehouse.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            {% endif %}
+            
+            <!-- Priority (only for specific document types) -->
+            {% if document_type.symbol == 'MMO' or document_type.symbol == 'ICO' or document_type.symbol == 'IPO' or document_type.symbol == 'TRO' or document_type.symbol == 'FVO' %}
+            <div class="form-group mb-3">
+              <label for="priority">Priority (1-5)*</label>
+              <input type="number" class="form-control" id="priority" name="priority" min="1" max="5" value="1" required>
+            </div>
+            {% endif %}
+            
+            <!-- Description -->
+            <div class="form-group mb-3">
+              <label for="description">Description</label>
+              <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Document Type Specific Fields -->
+      <div class="col-md-6 mb-4">
+        <div class="card">
+          <div class="card-header bg-info text-white">
+            <h5 class="mb-0">Document-Specific Information</h5>
+          </div>
+          <div class="card-body">
+            {% if document_type.symbol == 'BO' %}
+              <!-- BO Fields -->
+              <div class="form-group mb-3">
+                <label for="verified_by">Verified By</label>
+                <select class="form-control" id="verified_by" name="verified_by">
+                  <option value="">Select User</option>
+                  {% for user in users %}
+                    <option value="{{ user.id }}">{{ user.username }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            {% endif %}
+
+            {% if document_type.symbol == 'MM' %}
+              <!-- MM Fields (Presun v rámci skladu) -->
+              <div class="form-group mb-3">
+                <label for="destinate_cell">Destination Cell*</label>
+                <input type="text" class="form-control" id="destinate_cell" name="destinate_cell" required>
+              </div>
+              
+              <div class="form-group mb-3">
+                <label for="linked_document">Linked MMO Document (Optional)</label>
+                <select class="form-control" id="linked_document" name="linked_document">
+                  <option value="">Select Linked Document</option>
+                  {% for doc in potential_linked_documents %}
+                    {% if doc.document_type.symbol == 'MMO' %}
+                      <option value="{{ doc.id }}">{{ doc.barcode }}</option>
+                    {% endif %}
+                  {% endfor %}
+                </select>
+              </div>
+            {% endif %}
+            
+            {% if document_type.symbol == 'FV' %}
+              <!-- FV Fields (Presun mimo systému) -->
+              <div class="form-group mb-3">
+                <label for="carrier">Carrier*</label>
+                <input type="text" class="form-control" id="carrier" name="carrier" required>
+              </div>
+              
+              <div class="form-group mb-3">
+                <label for="address_id">Address ID*</label>
+                <input type="text" class="form-control" id="address_id" name="address_id" required>
+              </div>
+              
+              <div class="form-group mb-3">
+                <label for="post_barcode">Post Barcode</label>
+                <input type="text" class="form-control" id="post_barcode" name="post_barcode">
+              </div>
+              
+              <div class="form-group mb-3">
+                <label for="linked_document">Linked FVO Document*</label>
+                <select class="form-control" id="linked_document" name="linked_document" required>
+                  <option value="">Select Linked Document</option>
+                  {% for doc in potential_linked_documents %}
+                    {% if doc.document_type.symbol == 'FVO' %}
+                      <option value="{{ doc.id }}">{{ doc.barcode }}</option>
+                    {% endif %}
+                  {% endfor %}
+                </select>
+              </div>
+            {% endif %}
+            
+            {% if document_type.symbol == 'IC+' or document_type.symbol == 'IC-' or document_type.symbol == 'IP+' or document_type.symbol == 'IP-' %}
+              <!-- IC+/IC-/IP+/IP- Fields (Výsledky inventúry) -->
+              <div class="form-group mb-3">
+                <label for="linked_document">Linked {% if document_type.symbol == 'IC+' or document_type.symbol == 'IC-' %}ICO{% else %}IPO{% endif %} Document*</label>
+                <select class="form-control" id="linked_document" name="linked_document" required>
+                  <option value="">Select Linked Document</option>
+                  {% for doc in potential_linked_documents %}
+                    {% if doc.document_type.symbol == 'ICO' and document_type.symbol == 'IC+' or doc.document_type.symbol == 'ICO' and document_type.symbol == 'IC-' or doc.document_type.symbol == 'IPO' and document_type.symbol == 'IP+' or doc.document_type.symbol == 'IPO' and document_type.symbol == 'IP-' %}
+                      <option value="{{ doc.id }}">{{ doc.barcode }}</option>
+                    {% endif %}
+                  {% endfor %}
+                </select>
+              </div>
+              
+              <div class="form-group mb-3">
+                <label for="verified_by">Verified By*</label>
+                <select class="form-control" id="verified_by" name="verified_by" required>
+                  <option value="">Select User</option>
+                  {% for user in appusers %}
+                    <option value="{{ user.id }}">{{ user.user.username }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            {% endif %}
+            
+            {% if document_type.symbol == 'WM-' or document_type.symbol == 'WM+' %}
+              <!-- WM-/WM+ Fields (Odpis/prijem v rámci prevodu) -->
+              <div class="form-group mb-3">
+                <label for="linked_document">Linked TRO/FVO Document*</label>
+                <select class="form-control" id="linked_document" name="linked_document" required>
+                  <option value="">Select Linked Document</option>
+                  {% for doc in potential_linked_documents %}
+                    {% if doc.document_type.symbol == 'TRO' or doc.document_type.symbol == 'FVO' %}
+                      <option value="{{ doc.id }}">{{ doc.barcode }}</option>
+                    {% endif %}
+                  {% endfor %}
+                </select>
+              </div>
+            {% endif %}
+            
+            {% if document_type.symbol == 'NN+' or document_type.symbol == 'NN-' %}
+              <!-- NN+/NN- Fields (Neplánovaný príjem/výdaj) -->
+              <div class="form-group mb-3">
+                <label for="verified_by">Verified By*</label>
+                <select class="form-control" id="verified_by" name="verified_by" required>
+                  <option value="">Select User</option>
+                  {% for user in users %}
+                    <option value="{{ user.id }}">{{ user.username }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            {% endif %}
+            
+            {% if document_type.symbol == 'PZ' %}
+              <!-- PZ Fields (Príjem z externého zdroja) -->
+              <div class="form-group mb-3">
+                <label for="verified_by">Verified By*</label>
+                <select class="form-control" id="verified_by" name="verified_by" required>
+                  <option value="">Select User</option>
+                  {% for user in users %}
+                    <option value="{{ user.id }}">{{ user.username }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              
+              <div class="form-group mb-3">
+                <label for="carrier">Carrier</label>
+                <input type="text" class="form-control" id="carrier" name="carrier">
+              </div>
+              
+              <div class="form-group mb-3">
+                <label for="address_id">Supplier Address ID</label>
+                <input type="text" class="form-control" id="address_id" name="address_id">
+              </div>
+            {% endif %}
+            
+            {% if document_type.symbol == 'RW' or document_type.symbol == 'US+' or document_type.symbol == 'US-' %}
+              <!-- RW/US+/US- Fields (Zmena stávu z dôvodu reklamácie) -->
+              <p class="text-muted">No additional fields required for {{ document_type.name }} documents.</p>
+            {% endif %}
+            
+            {% if document_type.symbol == 'WZ' %}
+              <!-- WZ Fields (Vrátenie dodávateľovi) -->
+              <div class="form-group mb-3">
+                <label for="carrier">Carrier*</label>
+                <input type="text" class="form-control" id="carrier" name="carrier" required>
+              </div>
+              
+              <div class="form-group mb-3">
+                <label for="address_id">Address ID*</label>
+                <input type="text" class="form-control" id="address_id" name="address_id" required>
+              </div>
+              
+              <div class="form-group mb-3">
+                <label for="post_barcode">Post Barcode</label>
+                <input type="text" class="form-control" id="post_barcode" name="post_barcode">
+              </div>
+              
+              <div class="form-group mb-3">
+                <label for="verified_by">Verified By*</label>
+                <select class="form-control" id="verified_by" name="verified_by" required>
+                  <option value="">Select User</option>
+                  {% for user in users %}
+                    <option value="{{ user.id }}">{{ user.username }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            {% endif %}
+            
+            {% if document_type.symbol == 'ZB' %}
+              <!-- ZB Fields (Zberateľský baliček) -->
+              <div class="form-group mb-3">
+                <label for="linked_document">Linked ICO/IPO Document*</label>
+                <select class="form-control" id="linked_document" name="linked_document" required>
+                  <option value="">Select Linked Document</option>
+                  {% for doc in potential_linked_documents %}
+                    {% if doc.document_type.symbol == 'ICO' or doc.document_type.symbol == 'IPO' %}
+                      <option value="{{ doc.id }}">{{ doc.barcode }}</option>
+                    {% endif %}
+                  {% endfor %}
+                </select>
+              </div>
+              
+              <div class="form-group mb-3">
+                <label for="users">Assigned Users*</label>
+                <select class="form-control" id="users" name="users" required multiple>
+                  {% for user in users %}
+                    <option value="{{ user.id }}">{{ user.username }}</option>
+                  {% endfor %}
+                </select>
+                <small class="form-text text-muted">Hold Ctrl/Cmd to select multiple users</small>
+              </div>
+              
+              <div class="form-group mb-3">
+                <label for="verified_by">Verified By*</label>
+                <select class="form-control" id="verified_by" name="verified_by" required>
+                  <option value="">Select User</option>
+                  {% for user in users %}
+                    <option value="{{ user.id }}">{{ user.username }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            {% endif %}
+            
+            <!-- External Tasks -->
+            {% if document_type.symbol == 'MMO' %}
+              <!-- MMO Fields (Príkaz na presun v rámci skladu) -->
+              <div class="form-group mb-3">
+                <label for="start_at">Start Date*</label>
+                <input type="datetime-local" class="form-control" id="start_at" name="start_at" required>
+              </div>
+              
+              <div class="form-group mb-3">
+                <label for="required_at">Required Date*</label>
+                <input type="datetime-local" class="form-control" id="required_at" name="required_at" required>
+              </div>
+              
+              <div class="form-group mb-3">
+                <label for="origin_cell">Origin Cell*</label>
+                <input type="text" class="form-control" id="origin_cell" name="origin_cell" required>
+              </div>
+              
+              <div class="form-group mb-3">
+                <label for="destinate_cell">Destination Cell*</label>
+                <input type="text" class="form-control" id="destinate_cell" name="destinate_cell" required>
+              </div>
+              
+              <div class="form-group mb-3">
+                <label for="users">Assigned Users*</label>
+                <select class="form-control" id="users" name="users" required multiple>
+                  {% for user in users %}
+                    <option value="{{ user.id }}">{{ user.username }}</option>
+                  {% endfor %}
+                </select>
+                <small class="form-text text-muted">Hold Ctrl/Cmd to select multiple users</small>
+              </div>
+            {% endif %}
+            
+            {% if document_type.symbol == 'ICO' or document_type.symbol == 'IPO' %}
+              <!-- ICO/IPO Fields (Príkaz na čiastočnú/úplnú inventúru) -->
+              <div class="form-group mb-3">
+                <label for="start_at">Start Date*</label>
+                <input type="datetime-local" class="form-control" id="start_at" name="start_at" required>
+              </div>
+              
+              <div class="form-group mb-3">
+                <label for="required_at">Required Date*</label>
+                <input type="datetime-local" class="form-control" id="required_at" name="required_at" required>
+              </div>
+              
+              <div class="form-group mb-3">
+                <label for="verified_by">Verified By</label>
+                <select class="form-control" id="verified_by" name="verified_by">
+                  <option value="">Select User</option>
+                  {% for user in users %}
+                    <option value="{{ user.id }}">{{ user.username }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              
+              <div class="form-group mb-3">
+                <label for="users">Assigned Users*</label>
+                <select class="form-control" id="users" name="users" required multiple>
+                  {% for user in users %}
+                    <option value="{{ user.id }}">{{ user.username }}</option>
+                  {% endfor %}
+                </select>
+                <small class="form-text text-muted">Hold Ctrl/Cmd to select multiple users</small>
+              </div>
+            {% endif %}
+            
+            {% if document_type.symbol == 'TRO' or document_type.symbol == 'FVO' %}
+              <!-- TRO/FVO Fields (Príkaz na presun medzi skladmi / mimo systému) -->
+              {% if document_type.symbol == 'TRO' %}
+              <div class="form-group mb-3">
+                <label for="destinate_warehouse">Destination Department*</label>
+                <select class="form-control" id="destinate_warehouse" name="destinate_warehouse" required>
+                  <option value="">Select Destination Department</option>
+                  {% for dept in departments %}
+                    <option value="{{ dept.id }}">{{ dept.number }} {{ dept.name }} -- {{ dept.warehouse.code }} {{ dept.warehouse.name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              {% endif %}
+              
+              <div class="form-group mb-3">
+                <label for="carrier">Carrier*</label>
+                <input type="text" class="form-control" id="carrier" name="carrier" required>
+              </div>
+              
+              <div class="form-group mb-3">
+                <label for="start_at">Start Date*</label>
+                <input type="datetime-local" class="form-control" id="start_at" name="start_at" required>
+              </div>
+              
+              <div class="form-group mb-3">
+                <label for="required_at">Required Date*</label>
+                <input type="datetime-local" class="form-control" id="required_at" name="required_at" required>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      
+      <!-- Product Selection -->
+      <div class="col-md-12 mb-4">
+        <div class="card">
+          <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Products</h5>
+            <button type="button" class="btn btn-light btn-sm" id="add-product-row">Add Product</button>
+          </div>
+          <div class="card-body">
+            <div id="products-container">
+              <div class="product-row mb-3">
+                <div class="row">
+                  <div class="col-md-8">
+                    <label>Product*</label>
+                    <select class="form-control product-select" name="product_id" required>
+                      <option value="">Select Product</option>
+                      {% for product in products %}
+                        <option value="{{ product.id }}">{{ product.name }} {% if product.sku %}({{ product.sku }}){% endif %}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <div class="col-md-3">
+                    <label>Quantity*</label>
+                    <input type="number" class="form-control" name="amount_required" min="1" value="1" required>
+                  </div>
+                  <div class="col-md-1 d-flex align-items-end">
+                    <button type="button" class="btn btn-danger btn-sm remove-product">X</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="row">
+      <div class="col-12">
+        <button type="submit" class="btn btn-primary btn-lg">Create Document</button>
+        <a href="{% url 'new_document' %}" class="btn btn-secondary btn-lg">Back to Document Types</a>
+      </div>
+    </div>
+  </form>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Add new product row
+    document.getElementById('add-product-row').addEventListener('click', function() {
+      const container = document.getElementById('products-container');
+      const productRow = document.querySelector('.product-row').cloneNode(true);
+      
+      // Clear values
+      const selectElement = productRow.querySelector('select');
+      const inputElement = productRow.querySelector('input');
+      selectElement.value = '';
+      inputElement.value = '1';
+      
+      // Add remove button functionality
+      productRow.querySelector('.remove-product').addEventListener('click', function() {
+        this.closest('.product-row').remove();
+      });
+      
+      container.appendChild(productRow);
+    });
+    
+    // Initialize remove buttons for existing rows
+    document.querySelectorAll('.remove-product').forEach(function(button) {
+      button.addEventListener('click', function() {
+        // Don't remove if it's the last row
+        const rows = document.querySelectorAll('.product-row');
+        if (rows.length > 1) {
+          this.closest('.product-row').remove();
+        }
+      });
+    });
+  });
+</script>
+{% endblock %}
