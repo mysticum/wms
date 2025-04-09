@@ -1,5 +1,6 @@
 from django.utils import timezone
 from .models import Document, DocumentStatus, Status
+from .models import Inventory
 
 
 class DocumentService:
@@ -56,7 +57,7 @@ class DocumentService:
         return True
 
     @staticmethod
-    def apply_document_changes(document):
+    def apply_document_changes(document, products, quantities, quantities_real, expiration_dates, serials, cells):
         if document.document_type.symbol == "BO":
             # Get the default cell of the origin department
             default_cell = document.origin_department.default_cell
@@ -64,36 +65,32 @@ class DocumentService:
             if not default_cell:
                 raise ValueError(f"Origin department {document.origin_department} has no default cell set")
                 
-            for dp in document.documentproduct_set.all():
+            for product, quantity, quantity_real, expiration_date, serial, cell in zip(products, quantities, quantities_real, expiration_dates, serials, cells):
                 
-                # Create or update an inventory record for this product in the default cell
-                from .models import Inventory
-                
-                # Check if inventory exists for this product in this cell
-                inventory, created = Inventory.objects.get_or_create(
-                    product=dp.product,
-                    cell=default_cell,
-                    defaults={
-                        'expiration_date': dp.expiration_date,
-                        'serial': dp.serial
-                    }
+                inventory = Inventory.objects.create(
+                    product=product,
+                    cell=cell,
+                    expiration_date=expiration_date,
+                    serial=serial
                 )
                 
-                # If inventory already existed, update the quantity
-                if not created:
-                    inventory.quantity_in_package = (inventory.quantity_in_package or 0) + (dp.amount_added or dp.amount_required)
-                    inventory.expiration_date = dp.expiration_date or inventory.expiration_date
-                    inventory.serial = dp.serial or inventory.serial
-                    inventory.save()
+                inventory.save()
     
     @staticmethod
-    def prepare_document_for_save(document, user=None):
+    def prepare_document_for_save(document, user=None, request=None):
         """
         Prepare a document for saving by setting required fields
         """
         # If document is new (doesn't have an ID yet)
         if not document.pk:
             document.pk = Document.objects.count() + 1
+
+            products = request.POST.getlist("product")
+            quantities = request.POST.getlist("amount_required")
+            quantities_real = request.POST.getlist("amount_real")
+            expiration_dates = request.POST.getlist("expiration_date")
+            serials = request.POST.getlist("serial")
+            cells = request.POST.getlist("cell")
 
             # Set document number if not already set
             if not document.document_number:
@@ -105,9 +102,10 @@ class DocumentService:
             
             # Set total_quantity if not already set
             if not hasattr(document, 'total_quantity') or document.total_quantity is None:
+
                 # If document has products, calculate total quantity from them
                 if hasattr(document, 'documentproduct_set') and document.documentproduct_set.exists():
-                    document.total_quantity = sum(dp.amount_required for dp in document.documentproduct_set.all())
+                    document.total_quantity = sum(x for x in amount_required)
                 else:
                     # Default to 0 if no products attached yet
                     document.total_quantity = 0
@@ -132,7 +130,12 @@ class DocumentService:
 
             # Apply changes if document is final
             if document.document_type.group == "Sklád":
-                DocumentService.apply_document_changes(document)
+                DocumentService.apply_document_changes(document, products, quantities, quantities_real, expiration_dates, serials, cells)
+
+            if not document.created_at:
+                document.created_at = timezone.now()
+
+            document.updated_at = timezone.now()
 
             
         

@@ -435,30 +435,25 @@
                     <label>Serial Number</label>
                     <input type="text" class="form-control" name="serial" maxlength="45">
                   </div>
-                </div>
-                {% endif %}
-                  <div class="col-md-1 d-flex align-items-end">
-                    <button type="button" class="btn btn-danger btn-sm remove-product">X</button>
-                  </div>
-                </div>
-                
-                <div class="row">
                   <div class="col-md-3">
                     <label>Cell</label>
                     <select class="form-control" name="cell">
                       <option value="">Select Cell</option>
                       {% for dept in departments %}
-                        <optgroup label="{{ dept.name }} - {{ dept.warehouse.name }}">
-                          {% for cell in cells %}
-                            {% if cell.level.section.row.department.id == dept.id %}
-                              <option value="{{ cell.id }}">{{ cell }}</option>
-                            {% endif %}
-                          {% endfor %}
-                        </optgroup>
+                        {% for cell in cells %}
+                          {% if cell.level.section.row.department.id == dept.id %}
+                            <option value="{{ cell.id }}">{{ cell }}</option>
+                          {% endif %}
+                        {% endfor %}
                       {% endfor %}
                     </select>
                   </div>
-                  
+                </div>
+                {% endif %}
+                  <div class="col-md-1 d-flex align-items-end">
+                    <button type="button" class="btn btn-danger btn-sm remove-product">X</button>
+                  </div>
+                </div>                  
               </div>
             </div>
           </div>
@@ -467,7 +462,7 @@
     </div>
     
     <div class="row">
-      <div class="col-12">
+      <div class="col-md-12">
         <button type="submit" class="btn btn-primary btn-lg">Create Document</button>
         <a href="{% url 'new_document' %}" class="btn btn-secondary btn-lg">Back to Document Types</a>
       </div>

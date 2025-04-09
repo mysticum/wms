@@ -49,7 +49,7 @@ def create_specific_document(request, doc_type):
             document = form.save(commit=False)
             
             # Let the service prepare the document (sets number, barcode, etc.)
-            document = DocumentService.prepare_document_for_save(document, request.user.appuser if hasattr(request.user, 'appuser') else None)
+            document = DocumentService.prepare_document_for_save(document, request.user.appuser if hasattr(request.user, 'appuser') else None, request)
             document.save()
             
             # Handle product items using formset
@@ -225,24 +225,5 @@ def change_document_status(request, document_id):
     messages.success(request, f"Document status updated to {status.name}")
   except Exception as e:
     messages.error(request, f"Error updating status: {str(e)}")
-  
-  return redirect('view_document', document_id=document_id)
-
-
-@require_POST
-@login_required
-def generate_document_barcode(request, document_id):
-  """Regenerate barcode for a document"""
-  document = get_object_or_404(Document, id=document_id)
-  
-  try:
-    # Generate a new barcode
-    barcode = DocumentService.generate_barcode(document.document_type, document.number)
-    document.barcode = barcode
-    document.save(update_fields=['barcode'])
-    
-    messages.success(request, f"Barcode regenerated: {barcode}")
-  except Exception as e:
-    messages.error(request, f"Error generating barcode: {str(e)}")
   
   return redirect('view_document', document_id=document_id)
