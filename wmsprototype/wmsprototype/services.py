@@ -66,12 +66,16 @@ class DocumentService:
                 raise ValueError(f"Origin department {document.origin_department} has no default cell set")
                 
             for product, quantity, quantity_real, expiration_date, serial, cell in zip(products, quantities, quantities_real, expiration_dates, serials, cells):
+                current_time = timezone.now()
                 
                 inventory = Inventory.objects.create(
                     product=product,
                     cell=cell,
                     expiration_date=expiration_date,
-                    serial=serial
+                    serial=serial,
+                    placed_at=current_time,
+                    moved_at=current_time,
+                    checked_at=current_time
                 )
                 
                 inventory.save()
