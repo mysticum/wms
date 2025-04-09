@@ -91,31 +91,10 @@ def create_updated_document_types(apps, schema_editor):
     )
     DocumentType.objects.create(
         group="Sklád",
-        symbol="RW",
+        symbol="RW-",
         name="Výdaj pred požiadavkou / Predpredajná reklamácia",
         description="",
         is_for_managers=False,
-    )
-    DocumentType.objects.create(
-        group="Sklád",
-        symbol="US+",
-        name="Korekcia stavu zásob (+)",
-        description="",
-        is_for_managers=True, # Explicitne uvedené "Len pre manažérov"
-    )
-    DocumentType.objects.create(
-        group="Sklád",
-        symbol="US-",
-        name="Korekcia stavu zásob (-)",
-        description="",
-        is_for_managers=True, # Explicitne uvedené "Len pre manažérov"
-    )
-    DocumentType.objects.create(
-        group="Sklád",
-        symbol="WZ",
-        name="Vrátenie dodávateľovi",
-        description="",
-        is_for_managers=False, # Storno môže byť len pre manažéra, ale typ ako taký nie
     )
     DocumentType.objects.create(
         group="Sklád",

@@ -55,9 +55,36 @@ class DocumentService:
             
         return True
 
+    @staticmethod
     def apply_document_changes(document):
-        # TODO: Implement document changes application
-        pass
+        if document.document_type.symbol == "BO":
+            # Get the default cell of the origin department
+            default_cell = document.origin_department.default_cell
+            
+            if not default_cell:
+                raise ValueError(f"Origin department {document.origin_department} has no default cell set")
+                
+            for dp in document.documentproduct_set.all():
+                
+                # Create or update an inventory record for this product in the default cell
+                from .models import Inventory
+                
+                # Check if inventory exists for this product in this cell
+                inventory, created = Inventory.objects.get_or_create(
+                    product=dp.product,
+                    cell=default_cell,
+                    defaults={
+                        'expiration_date': dp.expiration_date,
+                        'serial': dp.serial
+                    }
+                )
+                
+                # If inventory already existed, update the quantity
+                if not created:
+                    inventory.quantity_in_package = (inventory.quantity_in_package or 0) + (dp.amount_added or dp.amount_required)
+                    inventory.expiration_date = dp.expiration_date or inventory.expiration_date
+                    inventory.serial = dp.serial or inventory.serial
+                    inventory.save()
     
     @staticmethod
     def prepare_document_for_save(document, user=None):

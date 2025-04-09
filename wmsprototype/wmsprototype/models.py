@@ -20,13 +20,8 @@ class Address(models.Model):
         return f"{self.first_line}, {self.city}, {self.postcode}"
 
 class Warehouse(models.Model):
-    name = models.CharField(max_length=45, unique=True)
+    name = models.CharField(max_length=45)
     code = models.CharField(max_length=45, unique=True)
-    address = models.ForeignKey(
-        Address,
-        on_delete=models.PROTECT,
-        db_column='address_id'
-        )
     main_department = models.ForeignKey(
         'Department',
         on_delete=models.SET_NULL,
@@ -34,6 +29,11 @@ class Warehouse(models.Model):
         blank=True,
         related_name='main_warehouse_of',
         db_column='main_department_id'
+    )
+    address = models.ForeignKey(
+        Address,
+        on_delete=models.PROTECT,
+        db_column='address_id'
     )
 
     class Meta:
@@ -91,7 +91,7 @@ class Row(models.Model):
         return f"Row {self.number} - {dept_name} - {wh_name}"
 
 class Section(models.Model):
-    number = models.IntegerField()
+    number = models.IntegerField()  
     row = models.ForeignKey(
         Row,
         on_delete=models.PROTECT,
@@ -149,52 +149,41 @@ class Cell(models.Model):
         level_num = self.level.number
         section_num = self.level.section.number
         row_num = self.level.section.row.number
-        dept_name = self.level.section.row.department.name
-        wh_name = self.level.section.row.department.warehouse.name
-        return f"Cell {self.number}-{level_num}-{section_num}-{row_num}-{dept_name}-{wh_name} {self.barcode or ""}"
+        dept_num = self.level.section.row.department.number
+        return f"{self.number}-{level_num}-{section_num}-{row_num}-{dept_num} {self.barcode or ""}"
 
 class Product(models.Model):
     name = models.CharField(max_length=255)
     unit_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     weight = models.IntegerField(null=True, blank=True)
     ean = models.CharField(max_length=13, unique=True, null=True, blank=True)
-    sku = models.CharField(max_length=45, null=True, blank=True, db_column='scu')
-    description = models.CharField(max_length=45, null=True, blank=True, db_column='descriprion')
-    image = models.ImageField(upload_to='products/', null=True)
-    package_of_product = models.ForeignKey(
-        'self',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        db_column='package_of_product_id'
-    )
-    package_max_quantity = models.IntegerField(null=True, blank=True)
-
+    scu = models.CharField(max_length=45, null=True, blank=True)
+    description = models.CharField(max_length=45, null=True, blank=True) 
+    image = models.CharField(max_length=255, null=True, blank=True) 
     class Meta:
         verbose_name = 'Product'
         verbose_name_plural = 'Products'
         db_table = 'Products'
 
     def __str__(self):
-        return f"{self.ean} {self.name} ({self.sku or 'No SKU'})"
+        return f"{self.ean} {self.name} ({self.scu or 'No SKU'})"
 
 class Inventory(models.Model):
     product = models.ForeignKey(
         Product,
         on_delete=models.PROTECT,
         db_column='product_id'
-        )
+    )
     cell = models.ForeignKey(
         Cell,
         on_delete=models.PROTECT,
         db_column='cell_id'
-        )
+    )
     expiration_date = models.DateField(null=True, blank=True)
-    serial = models.CharField(max_length=45, null=True, blank=True)
-    quantity_in_package = models.IntegerField(null=True, blank=True)
-    placed_at = models.DateTimeField(auto_now_add=True)
-    moved_at = models.DateTimeField(auto_now=True)
-    checked_at = models.DateTimeField(auto_now=True)
+    serial = models.CharField(max_length=255, null=True, blank=True)
+    placed_at = models.DateTimeField()  
+    moved_at = models.DateTimeField()  
+    checked_at = models.DateTimeField()  
 
     class Meta:
         verbose_name = 'Inventory'
@@ -213,7 +202,7 @@ class AppUser(models.Model):
         Warehouse,
         on_delete=models.PROTECT,
         db_column='warehouse_id'
-        )
+    )
 
     class Meta:
         verbose_name = 'AppUser'
@@ -288,9 +277,9 @@ class Document(models.Model):
         db_column='address_id'
     )
     post_barcode = models.CharField(max_length=45, null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField()
     start_at = models.DateTimeField(null=True, blank=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    updated_at = models.DateTimeField()
     ended_at = models.DateTimeField(null=True, blank=True)
     required_at = models.DateTimeField(null=True, blank=True)
     created_by = models.ForeignKey(
@@ -306,7 +295,7 @@ class Document(models.Model):
         related_name='verified_documents',
         db_column='verified_by_id'
     )
-    current_status = models.CharField(max_length=45, default="Created")
+    current_status = models.CharField(max_length=45)
     linked_document = models.ForeignKey(
         'self',
         on_delete=models.SET_NULL,
@@ -359,12 +348,12 @@ class DocumentProduct(models.Model):
         Document,
         on_delete=models.CASCADE,
         db_column='document_id'
-        )
+    )
     product = models.ForeignKey(
         Product,
         on_delete=models.PROTECT,
         db_column='product_id'
-        )
+    )
     amount_required = models.IntegerField()
     amount_added = models.IntegerField(null=True, blank=True)
     unit_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
@@ -375,13 +364,13 @@ class DocumentProduct(models.Model):
         db_column='cell_id'
     )
     expiration_date = models.DateField(null=True, blank=True)
-    serial = models.CharField(max_length=45, null=True, blank=True)
+    serial = models.CharField(max_length=255, null=True, blank=True)
 
     class Meta:
         verbose_name = 'Document Product Item'
         verbose_name_plural = 'Document Product Items'
         db_table = 'Documents_has_Products'
-        unique_together = ('document', 'product')
+        unique_together = ('document', 'product') 
 
     def __str__(self):
         doc_num = self.document.document_number if self.document else 'N/A'
@@ -395,14 +384,14 @@ class DocumentUser(models.Model):
 
     class Meta:
         db_table = 'Documents_has_Users'
-        unique_together = ('document', 'appuser')
+        unique_together = ('document', 'appuser') 
         verbose_name = 'Document User Assignment'
         verbose_name_plural = 'Document User Assignments'
 
     def __str__(self):
         doc_num = self.document.document_number if self.document else 'N/A'
-        user_name = self.appuser.user.username if self.appuser and self.appuser.user else 'N/A'
-        return f"Doc {doc_num} assigned to User {user_name}"
+        user_name = f"{self.appuser.first_name} {self.appuser.last_name}" if self.appuser else 'N/A'
+        return f"Doc {doc_num} assigned to {user_name}"
 
 
 class DocumentStatus(models.Model):
@@ -426,6 +415,6 @@ class DocumentStatus(models.Model):
     def __str__(self):
         doc_num = self.document.document_number if self.document else 'N/A'
         status_name = self.status.name if self.status else 'N/A'
-        user_name = self.user.user.username if self.user and self.user.user else 'N/A'
+        user_name = f"{self.user.first_name} {self.user.last_name}" if self.user else 'N/A'
         ts = self.created_at.strftime('%Y-%m-%d %H:%M') if self.created_at else 'N/A'
         return f"Doc {doc_num} - Status '{status_name}' set by {user_name} at {ts}"
