@@ -14,6 +14,7 @@
   
   <form method="post" action="{% url 'create_specific_document' doc_type=document_type.symbol %}">
     {% csrf_token %}
+    {{ formset.management_form }}
     
     <div class="row">
       <!-- Document Basic Information -->
@@ -399,62 +400,60 @@
       <!-- Product Selection -->
       <div class="col-md-12 mb-4">
         <div class="card">
-          <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Products</h5>
-            <button type="button" class="btn btn-light btn-sm" id="add-product-row">Add Product</button>
+          <div class="card-header bg-success text-white">
+            <h5 class="mb-0">Product Information</h5>
+            <button type="button" id="add-product-row" class="btn btn-sm btn-light float-end">Add Product</button>
           </div>
           <div class="card-body">
             <div id="products-container">
+              {% for form in formset.forms %}
               <div class="product-row mb-3">
-                <div class="row mb-2">
-                  <div class="col-md-8">
+                <div class="row">
+                  {{ form.id }}
+                  <div class="col-md-3">
                     <label>Product*</label>
-                    <select class="form-control product-select" name="product_id" required>
+                    <select class="form-control" name="{{ form.prefix }}-product" required>
                       <option value="">Select Product</option>
                       {% for product in products %}
-                        <option value="{{ product.id }}">{{ product.ean }} {{ product.name }} {% if product.sku %}({{ product.sku }}){% endif %}</option>
+                        <option value="{{ product.id }}">{{ product.ean }} - {{ product.name }}</option>
                       {% endfor %}
                     </select>
                   </div>
                   <div class="col-md-3">
                     <label>Quantity*</label>
-                    <input type="number" class="form-control" name="amount_required" min="1" value="1" required>
+                    <input type="number" class="form-control" name="{{ form.prefix }}-amount_required" value="1" min="1" step="1" required>
                   </div>
                   {% if document_type.symbol == 'TRO' or document_type.symbol == 'FVO' or document_type.symbol == 'ICO' or document_type.symbol == 'IPO' or document_type.symbol == 'MMO' %}
                   <div class="col-md-3">
                     <label>Real quantity</label>
-                    <input type="number" class="form-control" name="amount_real" step="1" min="0">
+                    <input type="number" class="form-control" name="{{ form.prefix }}-amount_real" step="1" min="0">
                   </div>
                   {% endif %}
-                {% if document_type.symbol == 'MM' or document_type.symbol == 'FV' or document_type.symbol == 'WM+' or document_type.symbol == 'WM-' or document_type.symbol == 'PZ' or document_type.symbol == 'BO' %}
+                  {% if document_type.symbol == 'MM' or document_type.symbol == 'FV' or document_type.symbol == 'WM+' or document_type.symbol == 'WM-' or document_type.symbol == 'PZ' or document_type.symbol == 'BO' %}
                   <div class="col-md-3">
                     <label>Expiration Date</label>
-                    <input type="date" class="form-control" name="expiration_date">
+                    <input type="date" class="form-control" name="{{ form.prefix }}-expiration_date">
                   </div>
                   <div class="col-md-3">
                     <label>Serial Number</label>
-                    <input type="text" class="form-control" name="serial" maxlength="45">
+                    <input type="text" class="form-control" name="{{ form.prefix }}-serial" maxlength="45">
                   </div>
                   <div class="col-md-3">
                     <label>Cell</label>
-                    <select class="form-control" name="cell">
+                    <select class="form-control" name="{{ form.prefix }}-cell">
                       <option value="">Select Cell</option>
-                      {% for dept in departments %}
-                        {% for cell in cells %}
-                          {% if cell.level.section.row.department.id == dept.id %}
-                            <option value="{{ cell.id }}">{{ cell }}</option>
-                          {% endif %}
-                        {% endfor %}
+                      {% for cell in cells %}
+                        <option value="{{ cell.id }}">{{ cell }}</option>
                       {% endfor %}
                     </select>
                   </div>
-                </div>
-                {% endif %}
+                  {% endif %}
                   <div class="col-md-1 d-flex align-items-end">
                     <button type="button" class="btn btn-danger btn-sm remove-product">X</button>
                   </div>
-                </div>                  
+                </div>
               </div>
+              {% endfor %}
             </div>
           </div>
         </div>
@@ -477,29 +476,38 @@
       const container = document.getElementById('products-container');
       const productRow = document.querySelector('.product-row').cloneNode(true);
       
-      // Clear values
+      // Update form count for management form
+      const totalForms = document.querySelector('[name="documentproduct_set-TOTAL_FORMS"]');
+      const formCount = parseInt(totalForms.value);
+      totalForms.value = formCount + 1;
+      
+      // Update fields with new index
+      const newIndex = formCount;
+      const prefix = `documentproduct_set-${newIndex}`;
+      
+      // Clear values and update names
       const selects = productRow.querySelectorAll('select');
       const inputs = productRow.querySelectorAll('input');
       
-      // Reset all selects
+      // Reset all selects and update names
       selects.forEach(select => {
-        if (select.name === 'product_id') {
-          select.value = '';
-        } else if (select.name === 'cell') {
-          select.value = '';
-        }
+        const fieldName = select.name.split('-').pop();
+        // Make sure we preserve the _id suffix for foreign keys
+        select.name = `${prefix}-${fieldName}`;
+        select.value = '';
       });
       
-      // Reset all inputs
+      // Reset all inputs and update names
       inputs.forEach(input => {
-        if (input.name === 'amount_required') {
-          input.value = '1';
-        } else if (input.name === 'unit_price') {
-          input.value = '';
-        } else if (input.name === 'expiration_date') {
-          input.value = '';
-        } else if (input.name === 'serial') {
-          input.value = '';
+        if (input.type !== 'hidden') {
+          const fieldName = input.name.split('-').pop();
+          input.name = `${prefix}-${fieldName}`;
+          
+          if (fieldName === 'amount_required') {
+            input.value = '1';
+          } else {
+            input.value = '';
+          }
         }
       });
       

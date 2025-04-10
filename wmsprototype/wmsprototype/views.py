@@ -44,40 +44,37 @@ def create_specific_document(request, doc_type):
           # Use the form to validate and save the document
           form = DocumentForm(request.POST, instance=document, document_type=document_type)
           
-          if form.is_valid():
-            # Save the document - our signals will handle number/barcode generation
-            document = form.save(commit=False)
+
+          # Save the document - our signals will handle number/barcode generation
+          document = form.save(commit=False)
+          
+          # Let the service prepare the document (sets number, barcode, etc.)
+          document = DocumentService.prepare_document_for_first_save(document, request.user.appuser if hasattr(request.user, 'appuser') else None, request)
+          document.save()
+          
+          # Handle product items using formset
+          formset = DocumentProductFormSet(request.POST, instance=document)
+          
+          if formset.is_valid():
+            # Save product items
+            formset.save()
             
-            # Let the service prepare the document (sets number, barcode, etc.)
-            document = DocumentService.prepare_document_for_save(document, request.user.appuser if hasattr(request.user, 'appuser') else None, request)
-            document.save()
+            # Update document total quantity
+            total_qty = sum(form.cleaned_data.get('amount_required', 0) or 0 for form in formset.forms if form.cleaned_data and not form.cleaned_data.get('DELETE', False))
+            document.total_quantity = total_qty
+            document.save(update_fields=['total_quantity'])
             
-            # Handle product items using formset
-            formset = DocumentProductFormSet(request.POST, instance=document)
+            # Set initial status - this is handled by signal now, but we ensure it's set
+            initial_status = Status.objects.filter(document_type=document_type, name="Created").first()
+            if initial_status and not hasattr(document, 'documentstatus_set') or document.documentstatus_set.count() == 0:
+              DocumentService.update_document_status(document, initial_status, document.created_by)
             
-            if formset.is_valid():
-              # Save product items
-              formset.save()
-              
-              # Update document total quantity
-              total_qty = sum(form.cleaned_data.get('amount_required', 0) or 0 for form in formset.forms if form.cleaned_data and not form.cleaned_data.get('DELETE', False))
-              document.total_quantity = total_qty
-              document.save(update_fields=['total_quantity'])
-              
-              # Set initial status - this is handled by signal now, but we ensure it's set
-              initial_status = Status.objects.filter(document_type=document_type, name="Created").first()
-              if initial_status and not hasattr(document, 'documentstatus_set') or document.documentstatus_set.count() == 0:
-                DocumentService.update_document_status(document, initial_status, document.created_by)
-              
-              messages.success(request, f"Document {document.barcode} created successfully!")
-              return redirect('view_document', document_id=document.id)
-            else:
-              for error in formset.errors:
-                messages.error(request, f"Product form error: {error}")
+            messages.success(request, f"Document {document.barcode} created successfully!")
+            return redirect('view_document', document_id=document.id)
           else:
-            for field, errors in form.errors.items():
-              for error in errors:
-                messages.error(request, f"{field}: {error}")
+            for error in formset.errors:
+              messages.error(request, f"Product form error: {error}")
+
       
       except Exception as e:
         messages.error(request, f"Error creating document: {str(e)}")
@@ -127,27 +124,7 @@ def create_specific_document(request, doc_type):
     return redirect('select_document_type')
 
 
-def view_document(request, document_id):
-  """View a specific document and its details"""
-  document = get_object_or_404(Document, id=document_id)
-  document_products = DocumentProduct.objects.filter(document=document)
-  status_history = DocumentStatus.objects.filter(document=document).order_by('-created_at')
-  
-  # Get available statuses for this document type
-  available_statuses = Status.objects.filter(document_type=document.document_type)
-  
-  context = {
-      'document': document,
-      'document_products': document_products,
-      'status_history': status_history,
-      'available_statuses': available_statuses
-  }
-  
-  return render(request, "document_details.html", context)
 
-
-@login_required
-def update_document(request, document_id):
   """Update an existing document"""
   document = get_object_or_404(Document, id=document_id)
   
@@ -201,29 +178,3 @@ def update_document(request, document_id):
   }
   
   return render(request, "edit_document.html", context)
-
-
-@require_POST
-@login_required
-def change_document_status(request, document_id):
-  """Change the status of a document"""
-  document = get_object_or_404(Document, id=document_id)
-  status_id = request.POST.get('status_id')
-  description = request.POST.get('description', '')
-  
-  if not status_id:
-    messages.error(request, "No status selected")
-    return redirect('view_document', document_id=document_id)
-  
-  try:
-    status = get_object_or_404(Status, id=status_id)
-    user = request.user.appuser if hasattr(request.user, 'appuser') else None
-    
-    # Use the service to update the status
-    DocumentService.update_document_status(document, status, user, description)
-    
-    messages.success(request, f"Document status updated to {status.name}")
-  except Exception as e:
-    messages.error(request, f"Error updating status: {str(e)}")
-  
-  return redirect('view_document', document_id=document_id)
