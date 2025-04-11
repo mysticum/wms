@@ -17,6 +17,39 @@ class DocumentService:
         ).count() + 1
         
         return count
+
+    @staticmethod
+    def apply_changes(document):
+        for dp in document.documentproduct_set.all():
+            for i in range(dp.amount_required):
+                if document.document_type.symbol in ["BO", "WM+"]:
+                    inventory = Inventory.objects.create(
+                    product=dp.product,
+                    cell = document.origin_department.default_cell,
+                    expiration_date = dp.expiration_date,
+                    serial = dp.serial,
+                    placed_at = timezone.now(),
+                    moved_at = timezone.now(),
+                    checked_at = timezone.now(),
+                )
+                elif document.document_type.symbol in ["IC+", "IP+", "NN+", "PZ"]:
+                    inventory = Inventory.objects.create(
+                        product=dp.product,
+                        cell = dp.cell,
+                        expiration_date = dp.expiration_date,
+                        serial = dp.serial,
+                        placed_at = timezone.now(),
+                        moved_at = timezone.now(),
+                        checked_at = timezone.now(),
+                    )
+                elif document.document_type.symbol in ["IC-", "IP-", "NN-", "FV"]:
+                    inventory_items = Inventory.objects.filter(
+                        product=dp.product,
+                        cell = dp.cell,
+                        expiration_date = dp.expiration_date,
+                        serial = dp.serial
+                    ).first().delete()
+                
     
     @staticmethod
     def generate_barcode(document_type, document_number, document_year, document_month, document_department_number):

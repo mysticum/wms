@@ -1,5 +1,16 @@
 from django import forms
+from django.contrib.auth.forms import AuthenticationForm
 from .models import Document, DocumentProduct, Status, AppUser, Department, Product
+
+
+class LoginForm(AuthenticationForm):
+    """Custom login form with Bootstrap styling"""
+    username = forms.CharField(
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Username'})
+    )
+    password = forms.CharField(
+        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Password'})
+    )
 
 
 class DocumentForm(forms.ModelForm):

@@ -192,8 +192,8 @@ class Inventory(models.Model):
 
     def __str__(self):
         prod_name = self.product.name if self.product else 'N/A'
-        cell_num = self.cell.number if self.cell else 'N/A'
-        return f"Inventory ID {self.pk}: {prod_name} in Cell {cell_num}"
+        cell_info = f"{self.cell.number}-{self.cell.level.number}-{self.cell.level.section.number}-{self.cell.level.section.row.number}-{self.cell.level.section.row.department.number}"
+        return f"Inventory ID {self.pk}: {prod_name} in {cell_info}"
 
 class AppUser(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)

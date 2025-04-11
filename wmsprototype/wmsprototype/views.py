@@ -2,20 +2,55 @@ from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.contrib import messages
+from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.utils import timezone
 from django.db import transaction
-from .models import Document, DocumentType, Department, DocumentProduct, Product, Status, AppUser, DocumentStatus
-from .forms import DocumentForm, DocumentProductFormSet
+from .models import *
+from .forms import DocumentForm, DocumentProductFormSet, LoginForm
 from .services import DocumentService
 
+def login_view(request):
+    """Handle user login"""
+    if request.method == 'POST':
+        form = LoginForm(request, data=request.POST)
+        if form.is_valid():
+            username = form.cleaned_data.get('username')
+            password = form.cleaned_data.get('password')
+            user = authenticate(username=username, password=password)
+            if user is not None:
+                login(request, user)
+                messages.success(request, f"Welcome, {username}!")
+                # Redirect to the page user came from or home page
+                next_page = request.GET.get('next', 'home')
+                return redirect(next_page)
+            else:
+                messages.error(request, "Invalid username or password.")
+        else:
+            messages.error(request, "Invalid username or password.")
+    else:
+        form = LoginForm()
+    return render(request, "login.html", {"form": form})
+
+
+def logout_view(request):
+    """Handle user logout"""
+    logout(request)
+    messages.info(request, "You have been logged out.")
+    return redirect('home')
+
+
+@login_required(login_url='login')
 def home(request):
-  return render(request, "home.html")
+    return render(request, "home.html")
 
+
+@login_required(login_url='login')
 def actions(request):
-  return render(request, "actions.html")
+    return render(request, "actions.html")
 
+@login_required(login_url='login')
 def select_document_type(request):
   """View for selecting document type before proceeding to create a specific document"""
   document_types = DocumentType.objects.all().order_by('group', 'symbol')
@@ -26,6 +61,7 @@ def select_document_type(request):
   
   return render(request, "select_document_type.html", context)
 
+@login_required(login_url='login')
 def create_specific_document(request, doc_type):
   """Create a specific type of document based on the selected document type"""
   try:
@@ -63,14 +99,12 @@ def create_specific_document(request, doc_type):
             total_qty = sum(form.cleaned_data.get('amount_required', 0) or 0 for form in formset.forms if form.cleaned_data and not form.cleaned_data.get('DELETE', False))
             document.total_quantity = total_qty
             document.save(update_fields=['total_quantity'])
-            
-            # Set initial status - this is handled by signal now, but we ensure it's set
-            initial_status = Status.objects.filter(document_type=document_type, name="Created").first()
-            if initial_status and not hasattr(document, 'documentstatus_set') or document.documentstatus_set.count() == 0:
-              DocumentService.update_document_status(document, initial_status, document.created_by)
+
+            if document.document_type.group == 'Sklád':
+              DocumentService.apply_changes(document)
             
             messages.success(request, f"Document {document.barcode} created successfully!")
-            return redirect('view_document', document_id=document.id)
+            # return redirect('view_document', document_id=document.id)
           else:
             for error in formset.errors:
               messages.error(request, f"Product form error: {error}")
@@ -94,8 +128,16 @@ def create_specific_document(request, doc_type):
     # Get AppUsers for verified_by fields
     appusers = AppUser.objects.all()
     
+    # Get cells for cell selection dropdowns
+    cells = Cell.objects.all()
+    
     # Get potential linked documents depending on document type
     potential_linked_documents = Document.objects.all()
+
+    # Get rows, sections, and levels for cell selection
+    rows = Row.objects.all()
+    sections = Section.objects.all()
+    levels = Level.objects.all()
     
     # Context for rendering the template
     context = {
@@ -103,6 +145,10 @@ def create_specific_document(request, doc_type):
         'form': form,
         'formset': formset,
         'departments': departments,
+        'rows': rows,
+        'sections': sections,
+        'levels': levels,
+        'cells': cells,
         'products': products,
         'users': users,
         'appusers': appusers,
