@@ -12,6 +12,14 @@
     {% endfor %}
   {% endif %}
   
+  {% if document_type.is_for_managers and not is_current_user_manager %}
+  <div class="alert alert-danger" role="alert">
+    <h4 class="alert-heading">Access Denied!</h4>
+    <p>You don't have permission to create this document type. Only managers can create this type of document.</p>
+    <hr>
+    <p class="mb-0">Please contact your manager if you need to create this type of document.</p>
+  </div>
+  {% else %} 
   <form method="post" action="{% url 'create_specific_document' doc_type=document_type.symbol %}">
     {% csrf_token %}
     {{ formset.management_form }}
@@ -80,18 +88,6 @@
             <h5 class="mb-0">Document-Specific Information</h5>
           </div>
           <div class="card-body">
-            {% if document_type.symbol == 'BO' %}
-              <!-- BO Fields -->
-              <div class="form-group mb-3">
-                <label for="verified_by">Verified By</label>
-                <select class="form-control" id="verified_by" name="verified_by">
-                  <option value="">Select User</option>
-                  {% for user in users %}
-                    <option value="{{ user.id }}">{{ user.username }}</option>
-                  {% endfor %}
-                </select>
-              </div>
-            {% endif %}
 
             {% if document_type.symbol == 'MM' %}
               <!-- MM Fields (Presun v rámci skladu) -->
@@ -162,16 +158,6 @@
                   {% endfor %}
                 </select>
               </div>
-              
-              <div class="form-group mb-3">
-                <label for="verified_by">Verified By*</label>
-                <select class="form-control" id="verified_by" name="verified_by" required>
-                  <option value="">Select User</option>
-                  {% for user in appusers %}
-                    <option value="{{ user.id }}">{{ user.user.username }}</option>
-                  {% endfor %}
-                </select>
-              </div>
             {% endif %}
             
             {% if document_type.symbol == 'WM-' or document_type.symbol == 'WM+' %}
@@ -191,31 +177,8 @@
               </div>
             {% endif %}
             
-            {% if document_type.symbol == 'NN+' or document_type.symbol == 'NN-' %}
-              <!-- NN+/NN- Fields (Neplánovaný príjem/výdaj) -->
-              <div class="form-group mb-3">
-                <label for="verified_by">Verified By*</label>
-                <select class="form-control" id="verified_by" name="verified_by" required>
-                  <option value="">Select User</option>
-                  {% for user in users %}
-                    <option value="{{ user.id }}">{{ user.username }}</option>
-                  {% endfor %}
-                </select>
-              </div>
-            {% endif %}
-            
             {% if document_type.symbol == 'PZ' %}
-              <!-- PZ Fields (Príjem z externého zdroja) -->
-              <div class="form-group mb-3">
-                <label for="verified_by">Verified By*</label>
-                <select class="form-control" id="verified_by" name="verified_by" required>
-                  <option value="">Select User</option>
-                  {% for user in users %}
-                    <option value="{{ user.id }}">{{ user.username }}</option>
-                  {% endfor %}
-                </select>
-              </div>
-              
+              <!-- PZ Fields (Príjem z externého zdroja) -->        
               <div class="form-group mb-3">
                 <label for="carrier">Carrier</label>
                 <input type="text" class="form-control" id="carrier" name="carrier">
@@ -248,16 +211,6 @@
                 <label for="post_barcode">Post Barcode</label>
                 <input type="text" class="form-control" id="post_barcode" name="post_barcode">
               </div>
-              
-              <div class="form-group mb-3">
-                <label for="verified_by">Verified By*</label>
-                <select class="form-control" id="verified_by" name="verified_by" required>
-                  <option value="">Select User</option>
-                  {% for user in users %}
-                    <option value="{{ user.id }}">{{ user.username }}</option>
-                  {% endfor %}
-                </select>
-              </div>
             {% endif %}
             
             {% if document_type.symbol == 'ZB' %}
@@ -284,16 +237,6 @@
                   {% endfor %}
                 </select>
                 <small class="form-text text-muted">Hold Ctrl/Cmd to select multiple users</small>
-              </div>
-              
-              <div class="form-group mb-3">
-                <label for="verified_by">Verified By*</label>
-                <select class="form-control" id="verified_by" name="verified_by" required>
-                  <option value="">Select User</option>
-                  {% for user in users %}
-                    <option value="{{ user.id }}">{{ user.username }}</option>
-                  {% endfor %}
-                </select>
               </div>
             {% endif %}
             
@@ -341,16 +284,6 @@
               <div class="form-group mb-3">
                 <label for="required_at">Required Date*</label>
                 <input type="datetime-local" class="form-control" id="required_at" name="required_at" required>
-              </div>
-              
-              <div class="form-group mb-3">
-                <label for="verified_by">Verified By</label>
-                <select class="form-control" id="verified_by" name="verified_by">
-                  <option value="">Select User</option>
-                  {% for user in users %}
-                    <option value="{{ user.id }}">{{ user.username }}</option>
-                  {% endfor %}
-                </select>
               </div>
               
               <div class="form-group mb-3">
@@ -459,6 +392,7 @@
         </div>
       </div>
     </div>
+  {% endif %}
     
     <div class="row">
       <div class="col-md-12">

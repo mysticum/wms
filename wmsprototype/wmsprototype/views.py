@@ -57,6 +57,7 @@ def select_document_type(request):
   
   context = {
       'document_types': document_types,
+      'is_current_user_manager': AppUser.objects.filter(user=request.user).first().role in ['ZAM', 'VED', 'ADM']
   }
   
   return render(request, "select_document_type.html", context)
@@ -124,8 +125,6 @@ def create_specific_document(request, doc_type):
     # Get users for user selections
     from django.contrib.auth.models import User
     users = User.objects.all()
-    
-    # Get AppUsers for verified_by fields
     appusers = AppUser.objects.all()
     
     # Get cells for cell selection dropdowns
@@ -152,7 +151,8 @@ def create_specific_document(request, doc_type):
         'products': products,
         'users': users,
         'appusers': appusers,
-        'potential_linked_documents': potential_linked_documents
+        'potential_linked_documents': potential_linked_documents,
+        'is_current_user_manager': AppUser.objects.filter(user=request.user).first().role in ['ZAM', 'VED', 'ADM']
     }
     
     # Render the appropriate template based on document type

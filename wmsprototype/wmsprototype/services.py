@@ -77,6 +77,13 @@ class DocumentService:
             document.origin_department.number
         )
         
+        if document.document_type.is_for_managers == True:
+            current_user = Appuser.objects.filter(user=request.user).first()
+            if current_user.role in ["ZAM", "VED", "ADM"]:
+                document.verified_by = current_user
+            else:
+                raise ValueError("User is not authorized to create this type of document")
+
         document.current_status = "Created"
         document.created_at = timezone.now()
         document.updated_at = timezone.now()
