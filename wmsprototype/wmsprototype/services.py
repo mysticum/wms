@@ -83,13 +83,16 @@ class DocumentService:
                         moved_at = timezone.now(),
                         checked_at = timezone.now(),
                     )
-                elif document.document_type.symbol in ["IC-", "IP-", "NN-", "FV"]:
-                    inventory_items = Inventory.objects.filter(
+                elif document.document_type.symbol in ["IC-", "IP-", "NN-", "FV", "RW-"]:
+                    inventory_item = Inventory.objects.filter(
                         product=dp.product,
                         cell = dp.cell,
                         expiration_date = dp.expiration_date,
                         serial = dp.serial
-                    ).first().delete()
+                    ).first()
+                    
+                    if inventory_item:
+                        inventory_item.delete()
                 
     
     @staticmethod
