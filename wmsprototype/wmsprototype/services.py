@@ -82,7 +82,10 @@ class DocumentService:
             else:
                 raise ValueError("User is not authorized to create this type of document")
 
-        document.current_status = "Created"
+        if document.document_type.symbol in ["FVO", "ICO", "IPO", "MMO", "TRO"]:
+            document.current_status = "Generated"
+        else: 
+            document.current_status = "Created"
         document.created_at = timezone.now()
         document.updated_at = timezone.now()
 

@@ -64,9 +64,47 @@ def select_document_type(request):
 
 @login_required(login_url='login')
 def view_document(request, document_id):
-  """View a specific document"""
+  """View a specific document and handle status changes"""
   document = get_object_or_404(Document, id=document_id)
-  return render(request, "view_document.html", {'document': document})
+  
+  # Get available statuses for this document type
+  available_statuses = Status.objects.filter(document_type=document.document_type)
+  
+  if request.method == 'POST' and 'change_status' in request.POST:
+    new_status_id = request.POST.get('new_status')
+    if new_status_id:
+      try:
+        new_status = Status.objects.get(id=new_status_id)
+        
+        # Get user-provided description or leave it empty
+        status_description = request.POST.get('status_description', '')
+        
+        # Record the status change in DocumentStatus
+        DocumentStatus.objects.create(
+          document=document,
+          status=new_status,
+          user=request.user.appuser,
+          description=status_description
+        )
+        
+        # Update document current status
+        document.update_status(new_status)
+        
+        messages.success(request, f"Document status updated to {new_status.name}")
+        return redirect('view_document', document_id=document_id)
+      except Exception as e:
+        messages.error(request, f"Error updating status: {str(e)}")
+  
+  # Get status history for the document
+  status_history = DocumentStatus.objects.filter(document=document).order_by('-created_at')
+  
+  context = {
+    'document': document,
+    'available_statuses': available_statuses,
+    'status_history': status_history,
+  }
+  
+  return render(request, "view_document.html", context)
 
 @login_required(login_url='login')
 def create_specific_document(request, doc_type):
