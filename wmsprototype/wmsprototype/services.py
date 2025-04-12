@@ -86,6 +86,24 @@ class DocumentService:
             document.current_status = "Generated"
         else: 
             document.current_status = "Created"
+
+        if document.document_type.symbol == 'FVO':
+            wh = Address.objects.filter(department=document.destinate_department).first()
+            document.address = wh.address
+
+        if document.linked_document:
+            ld = document.linked_document
+            for dp in document.documentproduct_set.all():
+                ldp = ld.documentproduct_set.filter(product=dp.product)
+                if ldp.exists():
+                    ldpc = ldp.amount_added
+                    ldp.update(amount_added = dp.amount_required + ldpc)
+                else:
+                    raise Exception(f"Product {dp.product} not found in {ld} linked document")
+            if document.document_type.symbol == 'TRO' or document.document_type.symbol == 'FVO':
+                document.address = ld.address
+                document.carrier = ld.carrier
+
         document.created_at = timezone.now()
         document.updated_at = timezone.now()
 

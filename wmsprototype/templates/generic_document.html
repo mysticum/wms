@@ -88,40 +88,56 @@
             <h5 class="mb-0">Document-Specific Information</h5>
           </div>
           <div class="card-body">
-
             {% if document_type.symbol == 'MM' %}
               <!-- MM Fields (Presun v rámci skladu) -->
               <div class="form-group mb-3">
                 <label for="destinate_cell">Destination Cell*</label>
-                <input type="text" class="form-control" id="destinate_cell" name="destinate_cell" required>
+                <select class="form-control" id="destinate_cell" name="destinate_cell" required>
+                  <option value="">Select Destination Cell</option>
+                  {% for cell in cells %}
+                    <option value="{{ cell.id }}">{{ cell }}</option>
+                  {% endfor %}
+                </select>
               </div>
               
               <div class="form-group mb-3">
-                <label for="linked_document">Linked MMO Document (Optional)</label>
+                <label for="linked_document">Linked Document</label>
                 <select class="form-control" id="linked_document" name="linked_document">
-                  <option value="">Select Linked Document</option>
+                  <option value="">Select Linked Document (Optional)</option>
                   {% for doc in potential_linked_documents %}
-                    {% if doc.document_type.symbol == 'MMO' %}
-                      <option value="{{ doc.id }}">{{ doc.barcode }}</option>
-                    {% endif %}
-                  {% empty %}
-                    <option value="">No MMO documents available</option>
+                    <option value="{{ doc.id }}">{{ doc.barcode }} - {{ doc.document_type }}</option>
                   {% endfor %}
                 </select>
               </div>
             {% endif %}
-            
             {% if document_type.symbol == 'FV' %}
               <!-- FV Fields (Presun mimo systému) -->
+              <div class="form-group mb-3">
+                <label for="destinate_department">Destination Department*</label>
+                <select class="form-control" id="destinate_department" name="destinate_department" required>
+                  <option value="">Select Destination Department</option>
+                  {% for dept in departments %}
+                    <option value="{{ dept.id }}">{{ dept.name }} - {{ dept.warehouse.name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              
               <div class="form-group mb-3">
                 <label for="carrier">Carrier*</label>
                 <input type="text" class="form-control" id="carrier" name="carrier" required>
               </div>
               
+              {% if document_type.symbol == 'FVO' %}
               <div class="form-group mb-3">
-                <label for="address_id">Address ID*</label>
-                <input type="text" class="form-control" id="address_id" name="address_id" required>
+                <label for="address_id">Address*</label>
+                <select class="form-control" id="address_id" name="address_id" required>
+                  <option value="">Select Address</option>
+                  {% for address in addresses %}
+                    <option value="{{ address.id }}">{{ address.first_line }}, {{ address.city }}, {{ address.postcode }}, {{ address.country }}</option>
+                  {% endfor %}
+                </select>
               </div>
+              {% endif %}
               
               <div class="form-group mb-3">
                 <label for="post_barcode">Post Barcode</label>
@@ -134,11 +150,11 @@
                   <option value="">Select Linked Document</option>
                   {% for doc in potential_linked_documents %}
                     {% if doc.document_type.symbol == 'FVO' %}
-                      <option value="{{ doc.id }}">{{ doc.barcode }}</option>
+                      <option value="{{ doc.id }}">{{ doc.barcode }} - {{ doc.document_type }}</option>
                     {% endif %}
                   {% empty %}
                     <option value="">No FVO documents available</option>
-                    {% endfor %}
+                  {% endfor %}
                 </select>
               </div>
             {% endif %}
@@ -151,7 +167,7 @@
                   <option value="">Select Linked Document</option>
                   {% for doc in potential_linked_documents %}
                     {% if doc.document_type.symbol == 'ICO' and document_type.symbol == 'IC+' or doc.document_type.symbol == 'ICO' and document_type.symbol == 'IC-' or doc.document_type.symbol == 'IPO' and document_type.symbol == 'IP+' or doc.document_type.symbol == 'IPO' and document_type.symbol == 'IP-' %}
-                      <option value="{{ doc.id }}">{{ doc.barcode }}</option>
+                      <option value="{{ doc.id }}">{{ doc.barcode }} - {{ doc.document_type }}</option>
                     {% endif %}
                   {% empty %}
                     <option value="">No {% if document_type.symbol == 'IC+' or document_type.symbol == 'IC-' %}ICO{% else %}IPO{% endif %} documents available</option>
@@ -168,7 +184,7 @@
                   <option value="">Select Linked Document</option>
                   {% for doc in potential_linked_documents %}
                     {% if doc.document_type.symbol == 'TRO' or doc.document_type.symbol == 'FVO' %}
-                      <option value="{{ doc.id }}">{{ doc.barcode }}</option>
+                      <option value="{{ doc.id }}">{{ doc.barcode }} - {{ doc.document_type }}</option>
                     {% endif %}
                   {% empty %}
                     <option value="">No TRO/FVO documents available</option>
@@ -315,6 +331,18 @@
                 <label for="carrier">Carrier*</label>
                 <input type="text" class="form-control" id="carrier" name="carrier" required>
               </div>
+              
+              {% if document_type.symbol == 'FVO' %}
+              <div class="form-group mb-3">
+                <label for="address_id">Address*</label>
+                <select class="form-control" id="address_id" name="address_id" required>
+                  <option value="">Select Address</option>
+                  {% for address in addresses %}
+                    <option value="{{ address.id }}">{{ address.first_line }}, {{ address.city }}, {{ address.postcode }}, {{ address.country }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              {% endif %}
               
               <div class="form-group mb-3">
                 <label for="start_at">Start Date*</label>

@@ -200,6 +200,9 @@ def create_specific_document(request, doc_type):
     sections = Section.objects.all()
     levels = Level.objects.all()
     
+    # Get addresses for address selection dropdown
+    addresses = Address.objects.all()
+    
     # Context for rendering the template
     context = {
         'document_type': document_type,
@@ -214,6 +217,7 @@ def create_specific_document(request, doc_type):
         'users': users,
         'appusers': appusers,
         'potential_linked_documents': potential_linked_documents,
+        'addresses': addresses,
         'is_current_user_manager': AppUser.objects.filter(user=request.user).first().role in ['ZAM', 'VED', 'ADM']
     }
     
