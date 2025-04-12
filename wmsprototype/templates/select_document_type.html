@@ -25,6 +25,7 @@
       <tbody>
         {% for type in document_types %}
         {% if not type.is_for_managers or is_current_user_manager %}
+        {% if type.symbol != "IC+" and type.symbol != "IP+" and type.symbol != "IC-" and type.symbol != "IP-" %}
           <tr>
             <td>{{ type.name }}</td>
             <td>{{ type.symbol }}</td>
@@ -33,6 +34,7 @@
               <a href="{% url 'create_specific_document' doc_type=type.symbol %}" class="btn btn-primary btn-sm">Select</a> {# Use btn-sm for smaller button if desired #}
             </td>
           </tr>
+        {% endif %}
         {% endif %}
         {% empty %}
           <tr>

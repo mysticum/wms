@@ -9,7 +9,7 @@ from django.utils import timezone
 from django.db import transaction
 from .models import *
 from .forms import DocumentForm, DocumentProductFormSet, LoginForm
-from .services import DocumentService
+from .services import DocumentService, TopologyService
 
 def login_view(request):
     """Handle user login"""
@@ -63,6 +63,120 @@ def select_document_type(request):
   return render(request, "select_document_type.html", context)
 
 @login_required(login_url='login')
+def list_documents(request):
+  """View to display all documents in the system"""
+  # Get all documents, ordered by creation date (newest first)
+  documents = Document.objects.all().order_by('-created_at')
+  
+  # Filter by document type if specified in query parameters
+  doc_type_id = request.GET.get('doc_type')
+  if doc_type_id:
+    documents = documents.filter(document_type_id=doc_type_id)
+  
+  # Filter by department if specified in query parameters
+  dept_id = request.GET.get('department')
+  if dept_id:
+    documents = documents.filter(origin_department_id=dept_id)
+    
+  # Get all document types for the filter dropdown
+  document_types = DocumentType.objects.all().order_by('-group', 'symbol')
+  
+  # Get all departments for the filter dropdown
+  departments = Department.objects.all().order_by('name')
+  
+  context = {
+      'documents': documents,
+      'document_types': document_types,
+      'departments': departments,
+      'is_current_user_manager': AppUser.objects.filter(user=request.user).first().role in ['ZAM', 'VED', 'ADM']
+  }
+  
+  return render(request, "documents_list.html", context)
+
+@login_required(login_url='login')
+def list_products(request):
+  """View to display all products in the system"""
+  # Get all products
+  products = Product.objects.all().order_by('name')
+  
+  # Filter by name if specified in query parameters
+  product_name = request.GET.get('name')
+  if product_name:
+    products = products.filter(name__icontains=product_name)
+  
+  # Filter by EAN if specified
+  ean = request.GET.get('ean')
+  if ean:
+    products = products.filter(ean__icontains=ean)
+  
+  # Add inventory count to each product
+  for product in products:
+    product.inventory_count = Inventory.objects.filter(product=product).count()
+  
+  context = {
+    'products': products,
+    'is_current_user_manager': AppUser.objects.filter(user=request.user).first().role in ['ZAM', 'VED', 'ADM']
+  }
+  
+  return render(request, "products_list.html", context)
+
+@login_required(login_url='login')
+def view_product(request, product_id):
+  """View a specific product with inventory balances by department"""
+  product = get_object_or_404(Product, id=product_id)
+  
+  # Get all inventory items for this product
+  inventory_items = Inventory.objects.filter(product=product)
+  
+  # Organize inventory by department
+  inventory_by_department = {}
+  total_quantity = 0
+  
+  for item in inventory_items:
+    # Get the department for this cell
+    department = TopologyService.get_department_by_cell(item.cell)
+    
+    if department:
+      dept_id = department.id
+      
+      # Initialize department entry if it doesn't exist
+      if dept_id not in inventory_by_department:
+        inventory_by_department[dept_id] = {
+          'department': department,
+          'total_quantity': 0,
+          'locations': []
+        }
+      
+      # Check if this cell is already in the locations list
+      cell_exists = False
+      for location in inventory_by_department[dept_id]['locations']:
+        if location['cell'].id == item.cell.id:
+          location['quantity'] += 1
+          cell_exists = True
+          break
+      
+      # If cell not in list, add it
+      if not cell_exists:
+        inventory_by_department[dept_id]['locations'].append({
+          'cell': item.cell,
+          'quantity': 1,
+          'expiration_date': item.expiration_date,
+          'serial': item.serial
+        })
+      
+      # Update department total
+      inventory_by_department[dept_id]['total_quantity'] += 1
+      total_quantity += 1
+  
+  context = {
+    'product': product,
+    'inventory_by_department': inventory_by_department.values(),
+    'total_quantity': total_quantity,
+    'is_current_user_manager': AppUser.objects.filter(user=request.user).first().role in ['ZAM', 'VED', 'ADM']
+  }
+  
+  return render(request, "view_product.html", context)
+
 def view_document(request, document_id):
   """View a specific document and handle status changes"""
   document = get_object_or_404(Document, id=document_id)

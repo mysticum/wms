@@ -1,0 +1,84 @@
+{% extends "layout.html" %}
+
+{% block title %}All Products - WMS Prototype{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="row mb-4">
+    <div class="col">
+      <h1>Products</h1>
+      <p class="text-muted">Browse and manage warehouse products</p>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="card mb-4">
+    <div class="card-header bg-light">
+      <h5 class="mb-0">Search Products</h5>
+    </div>
+    <div class="card-body">
+      <form method="get" class="row g-3">
+        <div class="col-md-5">
+          <label for="name" class="form-label">Product Name</label>
+          <input type="text" name="name" id="name" class="form-control" value="{{ request.GET.name|default:'' }}" placeholder="Search by name...">
+        </div>
+        <div class="col-md-5">
+          <label for="ean" class="form-label">EAN / Barcode</label>
+          <input type="text" name="ean" id="ean" class="form-control" value="{{ request.GET.ean|default:'' }}" placeholder="Search by EAN...">
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+          <button type="submit" class="btn btn-primary w-100">Search</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Products Table -->
+  <div class="card">
+    <div class="card-body">
+      {% if products %}
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead class="table-light">
+            <tr>
+              <th>Name</th>
+              <th>EAN</th>
+              <th>SKU</th>
+              <th>Weight</th>
+              <th>Price</th>
+              <th>Inventory</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for product in products %}
+            <tr>
+              <td>{{ product.name }}</td>
+              <td>{% if product.ean %}{{ product.ean }}{% else %}-{% endif %}</td>
+              <td>{% if product.scu %}{{ product.scu }}{% else %}-{% endif %}</td>
+              <td>{% if product.weight %}{{ product.weight }}{% else %}-{% endif %}</td>
+              <td>{% if product.unit_price %}{{ product.unit_price }}{% else %}-{% endif %}</td>
+              <td>
+                <span class="badge {% if product.inventory_count > 0 %}bg-success{% else %}bg-danger{% endif %}">
+                  {{ product.inventory_count }}
+                </span>
+              </td>
+              <td>
+                <a href="{% url 'view_product' product_id=product.id %}" class="btn btn-sm btn-outline-primary">
+                  View
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="alert alert-info">
+        <p class="mb-0">No products found matching your criteria.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
