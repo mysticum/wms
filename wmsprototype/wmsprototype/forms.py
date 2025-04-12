@@ -66,6 +66,22 @@ class DocumentForm(forms.ModelForm):
         if 'linked_document' in self.fields:
             self.fields['linked_document'].queryset = Document.objects.exclude(pk=self.instance.pk if self.instance and self.instance.pk else None)
             
+    def clean(self):
+        """Custom validation for the entire form"""
+        cleaned_data = super().clean()
+        
+        # Fix the document_type validation issue by ensuring it's populated from the instance
+        if hasattr(self, 'instance') and self.instance and self.instance.document_type:
+            cleaned_data['document_type'] = self.instance.document_type
+        
+        # Add additional validation logic for required fields based on document type
+        if 'origin_department' in self.fields and not cleaned_data.get('origin_department'):
+            self.add_error('origin_department', 'Origin department is required')
+            
+        # Add more field validations as needed
+        
+        return cleaned_data
+    
     def _customize_for_document_type(self, document_type):
         """Customize form fields based on document type"""
         # Define which fields are relevant for each document type
@@ -88,6 +104,10 @@ class DocumentForm(forms.ModelForm):
         
         # Get fields for this document type, default to all fields if type not found
         relevant_fields = type_fields.get(document_type.symbol, list(self.fields.keys()))
+        
+        # Remove document_type from validation requirements
+        if 'document_type' in self.fields:
+            self.fields['document_type'].required = False
         
         # Hide irrelevant fields
         for field_name in list(self.fields.keys()):

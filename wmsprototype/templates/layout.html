@@ -29,15 +29,12 @@
           <li class="nav-item">
             <a class="nav-link" href="#">Documents</a>
           </li>
-          <li class="nav-item">
-            <a class="nav-link" href="#">Switch</a>
-          </li>
         </ul>
         <ul class="navbar-nav ms-auto">  
           {% if user.is_authenticated %}
           <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-              Welcome, {{ user.username }}
+              {{ user.username }}
             </a>
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
               <li><a class="dropdown-item" href="{% url 'logout' %}">Logout</a></li>

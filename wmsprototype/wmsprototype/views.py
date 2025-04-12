@@ -53,7 +53,7 @@ def actions(request):
 @login_required(login_url='login')
 def select_document_type(request):
   """View for selecting document type before proceeding to create a specific document"""
-  document_types = DocumentType.objects.all().order_by('group', 'symbol')
+  document_types = DocumentType.objects.all().order_by('-group', 'symbol')
   
   context = {
       'document_types': document_types,
@@ -61,6 +61,12 @@ def select_document_type(request):
   }
   
   return render(request, "select_document_type.html", context)
+
+@login_required(login_url='login')
+def view_document(request, document_id):
+  """View a specific document"""
+  document = get_object_or_404(Document, id=document_id)
+  return render(request, "view_document.html", {'document': document})
 
 @login_required(login_url='login')
 def create_specific_document(request, doc_type):
@@ -77,20 +83,38 @@ def create_specific_document(request, doc_type):
               document_type=document_type,
               created_by=request.user.appuser if hasattr(request.user, 'appuser') else None
           )
+
+          print("document created")
           
           # Use the form to validate and save the document
           form = DocumentForm(request.POST, instance=document, document_type=document_type)
-          
-
+          print("form created")
+          # Check if form is valid first
+          if not form.is_valid():
+              for field, errors in form.errors.items():
+                  for error in errors:
+                      messages.error(request, f"Document form error in {field}: {error}")
+              raise Exception("The Document could not be created because the data didn't validate.")
+          print("form valid")  
           # Save the document - our signals will handle number/barcode generation
           document = form.save(commit=False)
-          
+          print("document saved")
           # Let the service prepare the document (sets number, barcode, etc.)
           document = DocumentService.prepare_document_for_first_save(document, request.user.appuser if hasattr(request.user, 'appuser') else None, request)
+          print("document prepared")
           document.save()
+          print("document saved")
           
           # Handle product items using formset
           formset = DocumentProductFormSet(request.POST, instance=document)
+          print("formset created")
+          
+          if not formset.is_valid():
+              print(formset.errors)
+              for form_idx, form_errors in enumerate(formset.errors):
+                  for field, errors in form_errors.items():
+                      messages.error(request, f"Product #{form_idx+1} error in {field}: {errors[0]}")
+              raise Exception("The Document could not be created because product data didn't validate.")
           
           if formset.is_valid():
             # Save product items
@@ -163,7 +187,7 @@ def create_specific_document(request, doc_type):
       return render(request, template_name, context)
     except Exception:
       # Fallback to a generic template with conditional sections
-      return render(request, "document_types/generic_document.html", context)
+      return render(request, "generic_document.html", context)
       
   except DocumentType.DoesNotExist:
     messages.error(request, f"Document type {doc_type} does not exist")

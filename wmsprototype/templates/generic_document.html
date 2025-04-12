@@ -35,7 +35,7 @@
             <!-- Document Type (display only) -->
             <div class="form-group mb-3">
               <label>Document Type</label>
-              <input type="text" class="form-control" value="{{ document_type.name }} ({{ document_type.symbol }})" readonly>
+              <input type="text" class="form-control" value="{{ document_type }}" readonly>
             </div>
             
             <!-- Origin Department -->
@@ -52,10 +52,10 @@
             {% endif %}
             
             <!-- Destination Department -->
-            {% if document_type.symbol == 'MM+' or document_type.symbol == 'MM-' or document_type.symbol == 'FV' %}
+            {% if document_type.symbol == 'MM+' or document_type.symbol == 'MM-' or document_type.symbol == 'FVO' %}
             <div class="form-group mb-3">
-              <label for="destinate_department">Destination Department{% if document_type.symbol == 'FV' %}*{% endif %}</label>
-              <select class="form-control" id="destinate_department" name="destinate_department" {% if document_type.symbol == 'FV' %}required{% endif %}>
+              <label for="destinate_department">Destination Department{% if document_type.symbol == 'FVO' %}*{% endif %}</label>
+              <select class="form-control" id="destinate_department" name="destinate_department" {% if document_type.symbol == 'FVO' %}required{% endif %}>
                 <option value="">Select Destination Department</option>
                 {% for dept in departments %}
                   <option value="{{ dept.id }}">{{ dept.name }} - {{ dept.warehouse.name }}</option>

@@ -1,7 +1,5 @@
 from django.utils import timezone
-from .models import Document, DocumentStatus, Status
-from .models import Inventory
-
+from .models import *
 
 class DocumentService:
 
@@ -78,7 +76,7 @@ class DocumentService:
         )
         
         if document.document_type.is_for_managers == True:
-            current_user = Appuser.objects.filter(user=request.user).first()
+            current_user = AppUser.objects.filter(user=request.user).first()
             if current_user.role in ["ZAM", "VED", "ADM"]:
                 document.verified_by = current_user
             else:

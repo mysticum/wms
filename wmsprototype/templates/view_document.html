@@ -1,0 +1,389 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container mt-4">
+  <h1 class="mb-4">Document Details: {{ document.barcode }}</h1>
+  
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }}" role="alert">
+        {{ message }}
+      </div>
+    {% endfor %}
+  {% endif %}
+  
+  <div class="row">
+    <!-- Document Basic Information -->
+    <div class="col-md-6 mb-4">
+      <div class="card">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0">Document Information</h5>
+        </div>
+        <div class="card-body">
+          <!-- Document Type -->
+          <div class="form-group mb-3">
+            <label>Document Type</label>
+            <input type="text" class="form-control" value="{{ document.document_type }}" readonly>
+          </div>
+          
+          <!-- Document Status -->
+          {% if document.document_type.symbol == 'FVO' or document.document_type.symbol == 'ICO' or document.document_type.symbol == 'IPO' or document.document_type.symbol == 'MMO' or document.document_type.symbol == 'TRO' %}
+          <div class="form-group mb-3">
+            <label>Status</label>
+            <input type="text" class="form-control" value="{{ document.status }}" readonly>
+          </div>
+          {% endif %}
+          
+          <!-- Created At -->
+          <div class="form-group mb-3">
+            <label>Created</label>
+            <input type="text" class="form-control" value="{{ document.created_at|date:'Y-m-d H:i' }}" readonly>
+          </div>
+          
+          <!-- Created By -->
+          <div class="form-group mb-3">
+            <label>Created By</label>
+            <input type="text" class="form-control" value="{{ document.created_by.user }}" readonly>
+          </div>
+          
+          <!-- Origin Department -->
+          {% if document.origin_department %}
+          <div class="form-group mb-3">
+            <label>Origin Department</label>
+            <input type="text" class="form-control" value="{{ document.origin_department.name }} - {{ document.origin_department.warehouse.name }}" readonly>
+          </div>
+          {% endif %}
+          
+          <!-- Destination Department -->
+          {% if document.destinate_department %}
+          <div class="form-group mb-3">
+            <label>Destination Department</label>
+            <input type="text" class="form-control" value="{{ document.destinate_department.name }} - {{ document.destinate_department.warehouse.name }}" readonly>
+          </div>
+          {% endif %}
+          
+          <!-- Priority -->
+          {% if document.priority %}
+          <div class="form-group mb-3">
+            <label>Priority</label>
+            <input type="text" class="form-control" value="{{ document.priority }}" readonly>
+          </div>
+          {% endif %}
+          
+          <!-- Description -->
+          {% if document.description %}
+          <div class="form-group mb-3">
+            <label>Description</label>
+            <textarea class="form-control" rows="3" readonly>{{ document.description }}</textarea>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    
+    <!-- Document Type Specific Fields -->
+    <div class="col-md-6 mb-4">
+      <div class="card">
+        <div class="card-header bg-info text-white">
+          <h5 class="mb-0">Document-Specific Information</h5>
+        </div>
+        <div class="card-body">
+          <!-- MM Document Fields -->
+          {% if document.document_type.symbol == 'MM' %}
+            <!-- MM Fields (Presun v rámci skladu) -->
+            {% if document.destinate_cell %}
+            <div class="form-group mb-3">
+              <label>Destination Cell</label>
+              <input type="text" class="form-control" value="{{ document.destinate_cell }}" readonly>
+            </div>
+            {% endif %}
+            
+            {% if document.linked_document %}
+            <div class="form-group mb-3">
+              <label>Linked Document</label>
+              <input type="text" class="form-control" value="{{ document.linked_document.barcode }} ({{ document.linked_document.document_type }})" readonly>
+            </div>
+            {% endif %}
+          {% endif %}
+          
+          <!-- FV Document Fields -->
+          {% if document.document_type.symbol == 'FV' %}
+            <!-- FV Fields (Presun mimo systému) -->
+            {% if document.carrier %}
+            <div class="form-group mb-3">
+              <label>Carrier</label>
+              <input type="text" class="form-control" value="{{ document.carrier }}" readonly>
+            </div>
+            {% endif %}
+            
+            {% if document.address_id %}
+            <div class="form-group mb-3">
+              <label>Address ID</label>
+              <input type="text" class="form-control" value="{{ document.address_id }}" readonly>
+            </div>
+            {% endif %}
+            
+            {% if document.post_barcode %}
+            <div class="form-group mb-3">
+              <label>Post Barcode</label>
+              <input type="text" class="form-control" value="{{ document.post_barcode }}" readonly>
+            </div>
+            {% endif %}
+            
+            {% if document.linked_document %}
+            <div class="form-group mb-3">
+              <label>Linked Document</label>
+              <input type="text" class="form-control" value="{{ document.linked_document.barcode }} ({{ document.linked_document.document_type }})" readonly>
+            </div>
+            {% endif %}
+          {% endif %}
+          
+          <!-- IC+/IC-/IP+/IP- Fields -->
+          {% if document.document_type.symbol == 'IC+' or document.document_type.symbol == 'IC-' or document.document_type.symbol == 'IP+' or document.document_type.symbol == 'IP-' %}
+            {% if document.linked_document %}
+            <div class="form-group mb-3">
+              <label>Linked Document</label>
+              <input type="text" class="form-control" value="{{ document.linked_document.barcode }} ({{ document.linked_document.document_type }})" readonly>
+            </div>
+            {% endif %}
+          {% endif %}
+          
+          <!-- WM-/WM+ Fields -->
+          {% if document.document_type.symbol == 'WM-' or document.document_type.symbol == 'WM+' %}
+            {% if document.linked_document %}
+            <div class="form-group mb-3">
+              <label>Linked Document</label>
+              <input type="text" class="form-control" value="{{ document.linked_document.barcode }} ({{ document.linked_document.document_type }})" readonly>
+            </div>
+            {% endif %}
+          {% endif %}
+          
+          <!-- PZ Fields -->
+          {% if document.document_type.symbol == 'PZ' %}
+            {% if document.carrier %}
+            <div class="form-group mb-3">
+              <label>Carrier</label>
+              <input type="text" class="form-control" value="{{ document.carrier }}" readonly>
+            </div>
+            {% endif %}
+            
+            {% if document.address_id %}
+            <div class="form-group mb-3">
+              <label>Supplier Address ID</label>
+              <input type="text" class="form-control" value="{{ document.address_id }}" readonly>
+            </div>
+            {% endif %}
+          {% endif %}
+        
+      
+          
+          <!-- External Tasks -->
+          <!-- MMO Fields -->
+          {% if document.document_type.symbol == 'MMO' %}
+            {% if document.start_at %}
+            <div class="form-group mb-3">
+              <label>Start Date</label>
+              <input type="text" class="form-control" value="{{ document.start_at|date:'Y-m-d H:i' }}" readonly>
+            </div>
+            {% endif %}
+            
+            {% if document.required_at %}
+            <div class="form-group mb-3">
+              <label>Required Date</label>
+              <input type="text" class="form-control" value="{{ document.required_at|date:'Y-m-d H:i' }}" readonly>
+            </div>
+            {% endif %}
+            
+            {% if document.origin_cell %}
+            <div class="form-group mb-3">
+              <label>Origin Cell</label>
+              <input type="text" class="form-control" value="{{ document.origin_cell }}" readonly>
+            </div>
+            {% endif %}
+            
+            {% if document.destinate_cell %}
+            <div class="form-group mb-3">
+              <label>Destination Cell</label>
+              <input type="text" class="form-control" value="{{ document.destinate_cell }}" readonly>
+            </div>
+            {% endif %}
+            
+            {% if document.users.all %}
+            <div class="form-group mb-3">
+              <label>Assigned Users</label>
+              <ul class="list-group">
+                {% for user in document.users.all %}
+                  <li class="list-group-item">{{ user.username }}</li>
+                {% endfor %}
+              </ul>
+            </div>
+            {% endif %}
+          {% endif %}
+          
+          <!-- ICO/IPO Fields -->
+          {% if document.document_type.symbol == 'ICO' or document.document_type.symbol == 'IPO' %}
+            {% if document.start_at %}
+            <div class="form-group mb-3">
+              <label>Start Date</label>
+              <input type="text" class="form-control" value="{{ document.start_at|date:'Y-m-d H:i' }}" readonly>
+            </div>
+            {% endif %}
+            
+            {% if document.required_at %}
+            <div class="form-group mb-3">
+              <label>Required Date</label>
+              <input type="text" class="form-control" value="{{ document.required_at|date:'Y-m-d H:i' }}" readonly>
+            </div>
+            {% endif %}
+            
+            {% if document.users.all %}
+            <div class="form-group mb-3">
+              <label>Assigned Users</label>
+              <ul class="list-group">
+                {% for user in document.users.all %}
+                  <li class="list-group-item">{{ user.username }}</li>
+                {% endfor %}
+              </ul>
+            </div>
+            {% endif %}
+          {% endif %}
+          
+          <!-- TRO/FVO Fields -->
+          {% if document.document_type.symbol == 'TRO' or document.document_type.symbol == 'FVO' %}
+            {% if document.destinate_warehouse %}
+            <div class="form-group mb-3">
+              <label>Destination Warehouse</label>
+              <input type="text" class="form-control" value="{{ document.destinate_warehouse.code }} {{ document.destinate_warehouse.name }}" readonly>
+            </div>
+            {% endif %}
+            
+            {% if document.carrier %}
+            <div class="form-group mb-3">
+              <label>Carrier</label>
+              <input type="text" class="form-control" value="{{ document.carrier }}" readonly>
+            </div>
+            {% endif %}
+            
+            {% if document.start_at %}
+            <div class="form-group mb-3">
+              <label>Start Date</label>
+              <input type="text" class="form-control" value="{{ document.start_at|date:'Y-m-d H:i' }}" readonly>
+            </div>
+            {% endif %}
+            
+            {% if document.required_at %}
+            <div class="form-group mb-3">
+              <label>Required Date</label>
+              <input type="text" class="form-control" value="{{ document.required_at|date:'Y-m-d H:i' }}" readonly>
+            </div>
+            {% endif %}
+          {% endif %}
+          
+          <!-- WZ Fields -->
+          {% if document.document_type.symbol == 'WZ' %}
+            {% if document.carrier %}
+            <div class="form-group mb-3">
+              <label>Carrier</label>
+              <input type="text" class="form-control" value="{{ document.carrier }}" readonly>
+            </div>
+            {% endif %}
+            
+            {% if document.address_id %}
+            <div class="form-group mb-3">
+              <label>Address ID</label>
+              <input type="text" class="form-control" value="{{ document.address_id }}" readonly>
+            </div>
+            {% endif %}
+            
+            {% if document.post_barcode %}
+            <div class="form-group mb-3">
+              <label>Post Barcode</label>
+              <input type="text" class="form-control" value="{{ document.post_barcode }}" readonly>
+            </div>
+            {% endif %}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    
+    <!-- Document Products -->
+    <div class="col-md-12 mb-4">
+      <div class="card">
+        <div class="card-header bg-success text-white">
+          <h5 class="mb-0">Product Information</h5>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>Required Quantity</th>
+                  {% if document.document_type.symbol == 'TRO' or document.document_type.symbol == 'FVO' or document.document_type.symbol == 'ICO' or document.document_type.symbol == 'IPO' or document.document_type.symbol == 'MMO' %}
+                  <th>Actual Quantity</th>
+                  {% endif %}
+                  {% if document.document_type.symbol == 'MM' or document.document_type.symbol == 'FV' or document.document_type.symbol == 'WM+' or document.document_type.symbol == 'WM-' or document.document_type.symbol == 'PZ' or document.document_type.symbol == 'BO' or document.document_type.symbol == 'NN+' or document.document_type.symbol == 'NN-' %}
+                  <th>Expiration Date</th>
+                  <th>Serial Number</th>
+                  <th>Cell</th>
+                  {% endif %}
+                </tr>
+              </thead>
+              <tbody>
+                {% for product in document.documentproduct_set.all %}
+                <tr>
+                  <td>{{ product.product.ean }} - {{ product.product.name }}</td>
+                  <td>{{ product.amount_required }}</td>
+                  {% if document.document_type.symbol == 'TRO' or document.document_type.symbol == 'FVO' or document.document_type.symbol == 'ICO' or document.document_type.symbol == 'IPO' or document.document_type.symbol == 'MMO' %}
+                  <td>{{ product.amount_real|default:"Not set" }}</td>
+                  {% endif %}
+                  {% if document.document_type.symbol == 'MM' or document.document_type.symbol == 'FV' or document.document_type.symbol == 'WM+' or document.document_type.symbol == 'WM-' or document.document_type.symbol == 'PZ' or document.document_type.symbol == 'BO' or document.document_type.symbol == 'NN+' or document.document_type.symbol == 'NN-' %}
+                  <td>{{ product.expiration_date|default:"Not set" }}</td>
+                  <td>{{ product.serial|default:"Not set" }}</td>
+                  <td>{{ product.cell|default:"Not set" }}</td>
+                  {% endif %}
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="6" class="text-center">No products associated with this document</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="row">
+    <div class="col-md-12 mb-4">
+
+      
+      <!-- Document Type Specific Actions - only for FVO, ICO, IPO, MMO, and TRO documents -->
+      {% if document.document_type.symbol == 'FVO' or document.document_type.symbol == 'ICO' or document.document_type.symbol == 'IPO' or document.document_type.symbol == 'MMO' or document.document_type.symbol == 'TRO' %}
+        {% if document.status == 'NEW' %}
+          <a href="{% url 'start_document' barcode=document.barcode %}" class="btn btn-primary">Start Processing</a>
+        {% endif %}
+        
+        {% if document.status == 'PROCESSING' %}
+          <a href="{% url 'complete_document' barcode=document.barcode %}" class="btn btn-success">Complete Document</a>
+        {% endif %}
+      {% endif %}
+      
+      <!-- Document Operations -->
+      {% if perms.wmsprototype.change_document %}
+        {% if document.status == 'NEW' %}
+          <a href="{% url 'edit_document' barcode=document.barcode %}" class="btn btn-warning">Edit</a>
+        {% endif %}
+      {% endif %}
+      
+      {% if perms.wmsprototype.delete_document %}
+        {% if document.status == 'NEW' %}
+          <a href="{% url 'delete_document' barcode=document.barcode %}" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this document?');">Delete</a>
+        {% endif %}
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
