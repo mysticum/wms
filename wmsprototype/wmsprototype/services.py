@@ -2,7 +2,6 @@ from django.utils import timezone
 from .models import *
 
 class DocumentService:
-
     
     @staticmethod
     def generate_document_number(document_type, doc_department):
@@ -15,6 +14,50 @@ class DocumentService:
         ).count() + 1
         
         return count
+
+    @staticmethod
+    def close_inventory(document, request):
+
+        pd = DocumentService.prepare_document_for_first_save(Document(
+            document_type = DocumentType.objects.get(symbol="IP+") if document.document_type.symbol == "IPO" else DocumentType.objects.get(symbol="IC+"),
+            origin_department = document.origin_department,
+            created_by = request.user.appuser,
+            linked_document = document
+        ))
+        pd.save()
+        md = DocumentService.prepare_document_for_first_save(Document(
+            document_type = DocumentType.objects.get(symbol="IP-") if document.document_type.symbol == "IPO" else DocumentType.objects.get(symbol="IC-"),
+            origin_department = document.origin_department,
+            created_by = request.user.appuser,
+            linked_document = document
+        ))
+        md.save()
+
+        for dp in document.documentproduct_set.all():
+            if dp.amount_required < dp.amount_added:
+                DocumentProduct.objects.create(
+                    document = pd,
+                    product = dp.product,
+                    amount_required = dp.amount_required,
+                    amount_added = dp.amount_added - dp.amount_required,
+                    cell = dp.cell,
+                    expiration_date = dp.expiration_date,
+                    serial = dp.serial,
+                    unit_price = dp.unit_price
+                )
+            if dp.amount_required > dp.amount_added:
+                DocumentProduct.objects.create(
+                    document = md,
+                    product = dp.product,
+                    amount_required = dp.amount_required - dp.amount_added,
+                    cell = dp.cell,
+                    expiration_date = dp.expiration_date,
+                    serial = dp.serial,
+                    unit_price = dp.unit_price
+                )
+                
+
+        
 
     @staticmethod
     def apply_changes(document):
@@ -84,12 +127,20 @@ class DocumentService:
 
         if document.document_type.symbol in ["FVO", "ICO", "IPO", "MMO", "TRO"]:
             document.current_status = "Generated"
+            DocumentStatus.objects.create(
+                document=document,
+                status=Status.objects.get(name="Generated", document_type=document.document_type),
+                user=request.user.appuser if hasattr(request.user, 'appuser') else None
+            )
         else: 
             document.current_status = "Created"
 
         if document.document_type.symbol == 'FVO':
             wh = Address.objects.filter(department=document.destinate_department).first()
             document.address = wh.address
+
+        if document.document_type.symbol in ["ICO", "IPO"]:
+            DocumentService.prepare_inventory(document)
 
         if document.linked_document:
             ld = document.linked_document
@@ -108,3 +159,82 @@ class DocumentService:
         document.updated_at = timezone.now()
 
         return document
+
+    @staticmethod
+    def prepare_inventory(document):
+        if document.document_type.symbol == "ICO":
+            for i in Inventory.objects.filter(cell = document.origin_cell):
+                if DocumentProduct.objects.filter(document = document, product = i.product, cell = i.cell, expiration_date = i.expiration_date, serial = i.serial).exists():
+                    DocumentProduct.objects.filter(document = document, product = i.product, cell = i.cell, expiration_date = i.expiration_date, serial = i.serial).update(amount_required = F('amount_required') + i.amount)
+                else:
+                    DocumentProduct.objects.create(
+                        document = document,
+                        product = i.product,
+                        amount_required = i.amount,
+                        cell = i.cell,
+                        expiration_date = i.expiration_date,
+                        serial = i.serial,
+                        unit_price = i.product.unit_price
+                    )
+        if document.document_type.symbol == "TRO":
+            for i in Inventory.objects.filter(cell__in = TopologyService.get_cells_by_department(document.origin_department)):
+                if DocumentProduct.objects.filter(document = document, product = i.product, cell = i.cell, expiration_date = i.expiration_date, serial = i.serial).exists():
+                    DocumentProduct.objects.filter(document = document, product = i.product, cell = i.cell, expiration_date = i.expiration_date, serial = i.serial).update(amount_required = F('amount_required') + i.amount)
+                else:
+                    DocumentProduct.objects.create(
+                        document = document,
+                        product = i.product,
+                        amount_required = i.amount,
+                        cell = i.cell,
+                        expiration_date = i.expiration_date,
+                        serial = i.serial,
+                        unit_price = i.product.unit_price
+                    )
+                
+class TopologyService:
+    
+    @staticmethod
+    def get_department_by_cell(cell):
+        try:
+            return cell.level.section.row.department
+        except AttributeError:
+            return None
+
+    @staticmethod
+    def is_cell_in_department(cell, department):
+        try:
+            cell_department = TopologyService.get_department_by_cell(cell)
+            return cell_department == department
+        except Exception:
+            return False
+
+    @staticmethod
+    def get_cells_by_department(department):
+        """
+        Get all Cells located in a specific Department.
+        
+        Args:
+            department: A Department object
+            
+        Returns:
+            QuerySet of Cell objects belonging to the Department
+        """
+        # Use Django's nested relationships to find all cells
+        # Department -> Row -> Section -> Level -> Cell
+        try:
+            # Get all rows in the department
+            rows = department.row_set.all()
+            all_cells = []
+            
+            # For each row, get all sections, then levels, then cells
+            for row in rows:
+                sections = row.section_set.all()
+                for section in sections:
+                    levels = section.level_set.all()
+                    for level in levels:
+                        cells = level.cell_set.all()
+                        all_cells.extend(cells)
+            
+            return all_cells
+        except Exception:
+            return []

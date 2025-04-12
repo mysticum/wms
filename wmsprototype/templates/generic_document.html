@@ -50,6 +50,13 @@
               </select>
             </div>
             {% endif %}
+
+            {% if document_type.symbol == 'ICO'%}
+            <div class="form-group mb-3">
+              <label for="origin_cell">Cell*</label>
+              <input type="text" class="form-control" id="origin_cell" name="origin_cell" required>
+            </div>
+            {% endif %}
             
             <!-- Destination Department -->
             {% if document_type.symbol == 'MM+' or document_type.symbol == 'MM-' or document_type.symbol == 'FVO' %}
@@ -359,6 +366,7 @@
       </div>
       
       <!-- Product Selection -->
+      {% if document_type.symbol != "ICO" and document_type.symbol != "IPO" %}
       <div class="col-md-12 mb-4">
         <div class="card">
           <div class="card-header bg-success text-white">
@@ -385,10 +393,10 @@
                     <input type="number" class="form-control" name="{{ form.prefix }}-amount_required" value="1" min="1" step="1" required>
                   </div>
                   {% if document_type.symbol == 'TRO' or document_type.symbol == 'FVO' or document_type.symbol == 'ICO' or document_type.symbol == 'IPO' or document_type.symbol == 'MMO' %}
-                  <div class="col-md-3">
+       <!--           <div class="col-md-3">
                     <label>Real quantity</label>
                     <input type="number" class="form-control" name="{{ form.prefix }}-amount_real" step="1" min="0">
-                  </div>
+                  </div> -->
                   {% endif %}
                   {% if document_type.symbol == 'MM' or document_type.symbol == 'FV' or document_type.symbol == 'WM+' or document_type.symbol == 'WM-' or document_type.symbol == 'PZ' or document_type.symbol == 'BO' or document_type.symbol == 'NN+' or document_type.symbol == 'NN-' %}
                   <div class="col-md-3">

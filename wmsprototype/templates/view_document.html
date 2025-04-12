@@ -424,36 +424,46 @@
       </div>
     </div>
   </div>
-  {% endif %}
-  
+  <!-- Linked Documents Section -->
   <div class="row">
     <div class="col-md-12 mb-4">
-
-      
-      <!-- Document Type Specific Actions - only for FVO, ICO, IPO, MMO, and TRO documents -->
-      {% if document.document_type.symbol == 'FVO' or document.document_type.symbol == 'ICO' or document.document_type.symbol == 'IPO' or document.document_type.symbol == 'MMO' or document.document_type.symbol == 'TRO' %}
-        {% if document.status == 'NEW' %}
-          <a href="{% url 'start_document' barcode=document.barcode %}" class="btn btn-primary">Start Processing</a>
-        {% endif %}
-        
-        {% if document.status == 'PROCESSING' %}
-          <a href="{% url 'complete_document' barcode=document.barcode %}" class="btn btn-success">Complete Document</a>
-        {% endif %}
-      {% endif %}
-      
-      <!-- Document Operations -->
-      {% if perms.wmsprototype.change_document %}
-        {% if document.status == 'NEW' %}
-          <a href="{% url 'edit_document' barcode=document.barcode %}" class="btn btn-warning">Edit</a>
-        {% endif %}
-      {% endif %}
-      
-      {% if perms.wmsprototype.delete_document %}
-        {% if document.status == 'NEW' %}
-          <a href="{% url 'delete_document' barcode=document.barcode %}" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this document?');">Delete</a>
-        {% endif %}
-      {% endif %}
+      <div class="card">
+        <div class="card-header bg-info text-white">
+          <h5 class="mb-0">Linked Documents</h5>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-striped table-hover">
+              <thead>
+                <tr>
+                  <th>Barcode</th>
+                  <th>Date & Time</th>
+                  <th>User</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for linked_doc in linked_documents %}
+                <tr>
+                  <td>{{ linked_doc.barcode }}</td>
+                  <td>{{ linked_doc.created_at|date:'Y-m-d H:i' }}</td>
+                  <td>{{ linked_doc.created_by.user.username }}</td>
+                  <td>
+                    <a href="{% url 'view_document' document_id=linked_doc.id %}" class="btn btn-sm btn-primary">View</a>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="5" class="text-center">No linked documents found</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
+  {% endif %}
 </div>
 {% endblock %}

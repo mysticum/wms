@@ -71,37 +71,48 @@ def view_document(request, document_id):
   available_statuses = Status.objects.filter(document_type=document.document_type)
   
   if request.method == 'POST' and 'change_status' in request.POST:
-    new_status_id = request.POST.get('new_status')
-    if new_status_id:
-      try:
-        new_status = Status.objects.get(id=new_status_id)
-        
-        # Get user-provided description or leave it empty
-        status_description = request.POST.get('status_description', '')
-        
-        # Record the status change in DocumentStatus
-        DocumentStatus.objects.create(
-          document=document,
-          status=new_status,
-          user=request.user.appuser,
-          description=status_description
-        )
-        
-        # Update document current status
-        document.update_status(new_status)
-        
-        messages.success(request, f"Document status updated to {new_status.name}")
-        return redirect('view_document', document_id=document_id)
-      except Exception as e:
-        messages.error(request, f"Error updating status: {str(e)}")
+    with transaction.atomic():
+      new_status_id = request.POST.get('new_status')
+      if new_status_id:
+        try:
+          new_status = Status.objects.get(id=new_status_id)
+
+          if document.current_status == "Completed":
+              raise ValueError("Cannot change status of a completed document")
+
+          if document.document_type.symbol in ["ICO", "IPO"] and new_status.name == "Completed":
+            DocumentService.close_inventory(document)          
+
+          # Get user-provided description or leave it empty
+          status_description = request.POST.get('status_description', '')
+          
+          # Record the status change in DocumentStatus
+          DocumentStatus.objects.create(
+            document=document,
+            status=new_status,
+            user=request.user.appuser,
+            description=status_description
+          )
+          
+          # Update document current status
+          document.update_status(new_status)
+          
+          messages.success(request, f"Document status updated to {new_status.name}")
+          return redirect('view_document', document_id=document_id)
+        except Exception as e:
+          messages.error(request, f"Error updating status: {str(e)}")
   
   # Get status history for the document
   status_history = DocumentStatus.objects.filter(document=document).order_by('-created_at')
+  
+  # Get documents that link to this document (where this document is the linked_document)
+  linked_documents = Document.objects.filter(linked_document=document)
   
   context = {
     'document': document,
     'available_statuses': available_statuses,
     'status_history': status_history,
+    'linked_documents': linked_documents,
   }
   
   return render(request, "view_document.html", context)

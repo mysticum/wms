@@ -415,6 +415,6 @@ class DocumentStatus(models.Model):
     def __str__(self):
         doc_num = self.document.document_number if self.document else 'N/A'
         status_name = self.status.name if self.status else 'N/A'
-        user_name = f"{self.user.first_name} {self.user.last_name}" if self.user else 'N/A'
+        user_name = f"{self.user.user.username}" if self.user else 'N/A'
         ts = self.created_at.strftime('%Y-%m-%d %H:%M') if self.created_at else 'N/A'
         return f"Doc {doc_num} - Status '{status_name}' set by {user_name} at {ts}"
