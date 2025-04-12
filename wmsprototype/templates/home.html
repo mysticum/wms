@@ -1,6 +1,69 @@
 {% extends "layout.html" %}
 
+{% block title %}Home - WMS Prototype{% endblock %}
+
 {% block content %}
-<h1>Home</h1>
-<p>Welcome to the WMS Prototype.</p>
+<div class="container mt-4">
+  <h1>Home</h1>
+  <p class="lead">Welcome to the WMS Prototype.</p>
+  
+  {% if not is_admin %}
+  <div class="mt-4">
+    <h2>Current Tasks</h2>
+    <p class="text-muted">Open documents that require attention</p>
+    
+    <div class="card">
+      <div class="card-body">
+        {% if open_documents %}
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead class="table-light">
+              <tr>
+                <th>Barcode</th>
+                <th>Type</th>
+                <th>Date Created</th>
+                <th>Origin</th>
+                <th>Destination</th>
+                <th>Status</th>
+                <th>Total Quantity</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for document in open_documents %}
+              <tr>
+                <td>{{ document.barcode }}</td>
+                <td>
+                  <span class="badge bg-secondary">{{ document.document_type.symbol }}</span>
+                  {{ document.document_type.name }}
+                </td>
+                <td>{{ document.created_at|date:"Y-m-d H:i" }}</td>
+                <td>{{ document.origin_department.name }}</td>
+                <td>{{ document.destinate_department.name|default:"-" }}</td>
+                <td>
+                  <span class="badge {% if document.current_status == 'Completed' %}bg-success{% elif document.current_status == 'In Progress' %}bg-warning{% elif document.current_status == 'Cancelled' %}bg-danger{% else %}bg-info{% endif %}">
+                    {{ document.current_status }}
+                  </span>
+                </td>
+                <td>{{ document.total_quantity }}</td>
+                <td>
+                  <a href="{% url 'view_document' document_id=document.id %}" class="btn btn-sm btn-outline-primary">
+                    View
+                  </a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+          <p class="mb-0">No open tasks found at this time.</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
 {% endblock %}

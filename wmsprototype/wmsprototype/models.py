@@ -51,7 +51,7 @@ class Department(models.Model):
     refrigeration_mode = models.IntegerField(null=True, blank=True)
     default_cell = models.ForeignKey(
         'Cell',
-        on_delete=models.SET_NULL,
+        on_delete=models.PROTECT,
         null=True,
         blank=True,
         related_name='default_department_of',
@@ -76,7 +76,7 @@ class Row(models.Model):
     number = models.IntegerField()
     department = models.ForeignKey(
         Department,
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         db_column='department_id'
     )
 
@@ -94,7 +94,7 @@ class Section(models.Model):
     number = models.IntegerField()  
     row = models.ForeignKey(
         Row,
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         db_column='row_id'
     )
 
@@ -114,7 +114,7 @@ class Level(models.Model):
     number = models.CharField(max_length=45)
     section = models.ForeignKey(
         Section,
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         db_column='section_id'
     )
 
@@ -136,7 +136,7 @@ class Cell(models.Model):
     type = models.CharField(max_length=45, null=True, blank=True)
     level = models.ForeignKey(
         Level,
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         db_column='level_id'
     )
 

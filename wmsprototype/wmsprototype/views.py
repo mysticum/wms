@@ -43,7 +43,29 @@ def logout_view(request):
 
 @login_required(login_url='login')
 def home(request):
-    return render(request, "home.html")
+    # Check if the current user is a manager
+    is_admin = AppUser.objects.filter(user=request.user).first().role == "ADM"
+    
+    # For non-manager users, get open documents of specific types
+    open_documents = []
+    if not is_admin:
+        # Get documents of types FVO, ICO, IPO, MMO, and TRO that are open
+        document_types = DocumentType.objects.filter(symbol__in=['FVO', 'ICO', 'IPO', 'MMO', 'TRO'])
+        
+        # Get documents with these types that aren't in final statuses (like 'Completed' or 'Cancelled')
+        # Assuming 'Completed' and 'Cancelled' are final statuses, adjust based on your actual status names
+        open_documents = Document.objects.filter(
+            document_type__in=document_types
+        ).exclude(
+            current_status__in=['Completed', 'Cancelled']
+        ).order_by('-created_at')
+    
+    context = {
+        'open_documents': open_documents,
+        'is_admin': is_admin
+    }
+    
+    return render(request, "home.html", context)
 
 
 @login_required(login_url='login')

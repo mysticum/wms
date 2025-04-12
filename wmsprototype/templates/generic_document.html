@@ -54,7 +54,12 @@
             {% if document_type.symbol == 'ICO'%}
             <div class="form-group mb-3">
               <label for="origin_cell">Cell*</label>
-              <input type="text" class="form-control" id="origin_cell" name="origin_cell" required>
+              <select class="form-control" id="origin_cell" name="origin_cell" required>
+                <option value="">Select Cell</option>
+                {% for cell in cells %}
+                  <option value="{{ cell.id }}">{{ cell }}</option>
+                {% endfor %}
+              </select>
             </div>
             {% endif %}
             
@@ -278,12 +283,22 @@
               
               <div class="form-group mb-3">
                 <label for="origin_cell">Origin Cell*</label>
-                <input type="text" class="form-control" id="origin_cell" name="origin_cell" required>
+                <select class="form-control" id="origin_cell" name="origin_cell" required>
+                  <option value="">Select Origin Cell</option>
+                  {% for cell in cells %}
+                    <option value="{{ cell.id }}">{{ cell }}</option>
+                  {% endfor %}
+                </select>
               </div>
               
               <div class="form-group mb-3">
                 <label for="destinate_cell">Destination Cell*</label>
-                <input type="text" class="form-control" id="destinate_cell" name="destinate_cell" required>
+                <select class="form-control" id="destinate_cell" name="destinate_cell" required>
+                  <option value="">Select Destination Cell</option>
+                  {% for cell in cells %}
+                    <option value="{{ cell.id }}">{{ cell }}</option>
+                  {% endfor %}
+                </select>
               </div>
               
               <div class="form-group mb-3">
