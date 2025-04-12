@@ -118,12 +118,14 @@ class DocumentService:
             document.origin_department.number
         )
         
-        if document.document_type.is_for_managers == True:
-            current_user = AppUser.objects.filter(user=request.user).first()
-            if current_user.role in ["ZAM", "VED", "ADM"]:
-                document.verified_by = current_user
-            else:
-                raise ValueError("User is not authorized to create this type of document")
+        current_user = AppUser.objects.filter(user=request.user).first()
+        document.verified_by = current_user
+        # if document.document_type.is_for_managers == True:
+        #     current_user = AppUser.objects.filter(user=request.user).first()
+        #     if current_user.role in ["ZAM", "VED", "ADM"]:
+        #         document.verified_by = current_user
+        #     else:
+        #         raise ValueError("User is not authorized to create this type of document")
 
         if document.document_type.symbol in ["FVO", "ICO", "IPO", "MMO", "TRO"]:
             document.current_status = "Generated"
