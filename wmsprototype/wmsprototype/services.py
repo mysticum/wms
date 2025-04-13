@@ -64,12 +64,8 @@ class DocumentService:
 
     @staticmethod
     def apply_changes(document):
-        ttl_price = 0
-        ttl_weight = 0
         for dp in document.documentproduct_set.all():
             for i in range(dp.amount_required):
-                ttl_price += dp.unit_price
-                ttl_weight += dp.product.weight
                 if document.document_type.symbol in ["BO", "WM+"]:
                     inventory = Inventory.objects.create(
                     product=dp.product,
@@ -100,9 +96,6 @@ class DocumentService:
                     
                     if inventory_item:
                         inventory_item.delete()
-                
-        document.total_price = ttl_price
-        document.total_weight = ttl_weight
         document.save()    
     
     @staticmethod
@@ -116,11 +109,8 @@ class DocumentService:
         document.pk = Document.objects.count() + 1
         document.document_number = DocumentService.generate_document_number(document.document_type, document.origin_department)
         
-        if hasattr(document, 'documentproduct_set') and document.documentproduct_set.exists():
-            document.total_quantity = sum(x for x in amount_required)
-        else:
-            # Default to 0 if no products attached yet
-            document.total_quantity = 0
+        # Temporary set 0, will change latter in views.py
+        document.total_quantity = 0
              
         document.barcode = DocumentService.generate_barcode(
             document.document_type, 
