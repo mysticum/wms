@@ -29,9 +29,11 @@
           <li class="nav-item">
             <a class="nav-link" href="{% url 'list_products' %}">Products</a>
           </li>
+          {% if is_current_user_manager %}
           <li class="nav-item">
             <a class="nav-link" href="{% url 'analytics' %}">Analytics</a>
           </li>
+          {% endif %}
         </ul>
         <ul class="navbar-nav ms-auto">  
           {% if user.is_authenticated %}
