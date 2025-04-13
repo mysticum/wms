@@ -64,8 +64,12 @@ class DocumentService:
 
     @staticmethod
     def apply_changes(document):
+        ttl_price = 0
+        ttl_weight = 0
         for dp in document.documentproduct_set.all():
             for i in range(dp.amount_required):
+                ttl_price += dp.unit_price
+                ttl_weight += dp.product.weight
                 if document.document_type.symbol in ["BO", "WM+"]:
                     inventory = Inventory.objects.create(
                     product=dp.product,
@@ -97,13 +101,15 @@ class DocumentService:
                     if inventory_item:
                         inventory_item.delete()
                 
+        document.total_price = ttl_price
+        document.total_weight = ttl_weight
+        document.save()    
     
     @staticmethod
     def generate_barcode(document_type, document_number, document_year, document_month, document_department_number):
         barcode_value = f"{document_type.symbol}/{document_number}/{document_year}{document_month}/{document_department_number}"
         return barcode_value
 
-    
     @staticmethod
     def prepare_document_for_first_save(document, user=None, request=None):
 

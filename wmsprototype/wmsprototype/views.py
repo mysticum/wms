@@ -1,3 +1,4 @@
+from contextlib import nullcontext
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
@@ -319,6 +320,8 @@ def create_specific_document(request, doc_type):
           # Save the document - our signals will handle number/barcode generation
           document = form.save(commit=False)
           print("document saved")
+          
+
           # Let the service prepare the document (sets number, barcode, etc.)
           document = DocumentService.prepare_document_for_first_save(document, request.user.appuser if hasattr(request.user, 'appuser') else None, request)
           print("document prepared")
