@@ -7,9 +7,10 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.utils import timezone
 from django.db import transaction
+import json
 from .models import *
 from .forms import DocumentForm, DocumentProductFormSet, LoginForm
-from .services import DocumentService, TopologyService
+from .services import DocumentService, TopologyService, AnalyticsService
 
 def login_view(request):
     """Handle user login"""
@@ -71,6 +72,40 @@ def home(request):
 @login_required(login_url='login')
 def actions(request):
     return render(request, "actions.html")
+
+@login_required(login_url='login')
+def analytics(request):
+    """View for analytics dashboard"""
+    # Get suspicious operations
+    suspicious_docs = AnalyticsService.get_suspicious_operations()
+    
+    # Get daily minus totals
+    minus_totals = AnalyticsService.get_daily_minus_totals()
+    minus_dates = json.dumps([date.strftime('%Y-%m-%d') for date in minus_totals.keys()])
+    minus_values = json.dumps(list(minus_totals.values()))
+    
+    # Get FV document totals
+    fv_totals = AnalyticsService.get_daily_fv_totals()
+    fv_dates = json.dumps([date.strftime('%Y-%m-%d') for date in fv_totals.keys()])
+    fv_values = json.dumps(list(fv_totals.values()))
+    
+    # Get product freshness
+    freshness = AnalyticsService.get_product_freshness()
+    freshness_labels = json.dumps(list(freshness.keys()))
+    freshness_values = json.dumps(list(freshness.values()))
+    
+    context = {
+        'suspicious_docs': suspicious_docs,
+        'minus_dates': minus_dates,
+        'minus_values': minus_values,
+        'fv_dates': fv_dates,
+        'fv_values': fv_values,
+        'freshness_labels': freshness_labels,
+        'freshness_values': freshness_values,
+        'is_current_user_manager': AppUser.objects.filter(user=request.user).first().role in ['ZAM', 'VED', 'ADM']
+    }
+    
+    return render(request, "analytics.html", context)
 
 @login_required(login_url='login')
 def select_document_type(request):

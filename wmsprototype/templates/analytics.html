@@ -1,0 +1,208 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Analytics Dashboard - WMS Prototype
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Analytics Dashboard</h1>
+    
+    <div class="row mb-5">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-warning">
+                    <h5 class="card-title mb-0">Daily Minus Documents (Last 30 Days)</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="minusChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-info">
+                    <h5 class="card-title mb-0">FV Document Total Price (Last 30 Days)</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="fvChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mb-5">
+        <div class="col-md-6 mx-auto">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="card-title mb-0">Inventory Freshness</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="freshnessChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="card-title mb-0">Last 10 Suspicious Operations (Total Price > 20€)</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Barcode</th>
+                                    <th>Type</th>
+                                    <th>Created At</th>
+                                    <th>Department</th>
+                                    <th>Total Price</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for doc in suspicious_docs %}
+                                <tr>
+                                    <td>{{ doc.barcode }}</td>
+                                    <td>{{ doc.document_type.symbol }}</td>
+                                    <td>{{ doc.created_at|date:"Y-m-d H:i" }}</td>
+                                    <td>{{ doc.origin_department.name }}</td>
+                                    <td>{{ doc.calculated_total_price|floatformat:2 }}€</td>
+                                    <td>
+                                        <a href="{% url 'view_document' doc.id %}" class="btn btn-sm btn-primary">View</a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center">No suspicious operations found</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Include Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    // Parse data from Django template variables
+    const minusDates = JSON.parse('{{ minus_dates|safe }}');
+    const minusValues = JSON.parse('{{ minus_values|safe }}');
+    const fvDates = JSON.parse('{{ fv_dates|safe }}');
+    const fvValues = JSON.parse('{{ fv_values|safe }}');
+    const freshnessLabels = JSON.parse('{{ freshness_labels|safe }}');
+    const freshnessValues = JSON.parse('{{ freshness_values|safe }}');
+    
+    // Daily Minus Documents Chart
+    document.addEventListener('DOMContentLoaded', function() {
+        const minusCtx = document.getElementById('minusChart').getContext('2d');
+        
+        const minusChart = new Chart(minusCtx, {
+            type: 'bar',
+            data: {
+                labels: minusDates,
+                datasets: [{
+                    label: 'Total Amount',
+                    data: minusValues,
+                    backgroundColor: 'rgba(255, 193, 7, 0.5)',
+                    borderColor: 'rgba(255, 193, 7, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Total Amount'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Date'
+                        }
+                    }
+                }
+            }
+        });
+        
+        // FV Document Chart
+        const fvCtx = document.getElementById('fvChart').getContext('2d');
+        
+        const fvChart = new Chart(fvCtx, {
+            type: 'bar',
+            data: {
+                labels: fvDates,
+                datasets: [{
+                    label: 'Total Price (€)',
+                    data: fvValues,
+                    backgroundColor: 'rgba(13, 202, 240, 0.5)',
+                    borderColor: 'rgba(13, 202, 240, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Total Price (€)'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Date'
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Freshness Pie Chart
+        const freshnessCtx = document.getElementById('freshnessChart').getContext('2d');
+        
+        const freshnessChart = new Chart(freshnessCtx, {
+            type: 'pie',
+            data: {
+                labels: freshnessLabels,
+                datasets: [{
+                    data: freshnessValues,
+                    backgroundColor: [
+                        'rgba(25, 135, 84, 0.7)',  // Green for fresh
+                        'rgba(255, 193, 7, 0.7)',  // Yellow for soon to expire
+                        'rgba(220, 53, 69, 0.7)'   // Red for expired
+                    ],
+                    borderColor: [
+                        'rgba(25, 135, 84, 1)',
+                        'rgba(255, 193, 7, 1)',
+                        'rgba(220, 53, 69, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

@@ -1,4 +1,7 @@
 from django.utils import timezone
+from django.db.models import Sum, Count, F, Q, DecimalField, Case, When, Value, IntegerField
+from django.db.models.functions import TruncDate
+import datetime
 from .models import *
 
 class DocumentService:
@@ -196,6 +199,157 @@ class DocumentService:
                         unit_price = i.product.unit_price
                     )
                 
+class AnalyticsService:
+    
+    @staticmethod
+    def get_suspicious_operations(price_threshold=20.0, limit=10):
+        """
+        Get suspicious operations (IC-/IP-, NN- and RW- documents with total price > threshold)
+        
+        Args:
+            price_threshold: Minimum total price to consider as suspicious (default: 20.0)
+            
+        Returns:
+            QuerySet of suspicious Document objects
+        """
+        # Get document types with symbols IC-, IP-, NN-, RW-
+        suspicious_symbols = ['IC-', 'IP-', 'NN-', 'RW-']
+        suspicious_types = DocumentType.objects.filter(symbol__in=suspicious_symbols)
+        
+        # Get documents with total price > threshold
+        suspicious_docs = Document.objects.filter(
+            document_type__in=suspicious_types
+        ).annotate(
+            calculated_total_price=Sum(
+                F('documentproduct__amount_required') * F('documentproduct__unit_price'),
+                output_field=DecimalField()
+            )
+        ).filter(
+            calculated_total_price__gt=price_threshold
+        ).order_by('-created_at')[:limit]
+        
+        return suspicious_docs
+    
+    @staticmethod
+    def get_daily_minus_totals(days=30):
+        """
+        Get daily minus document totals for the last specified days
+        
+        Args:
+            days: Number of days to look back (default: 30)
+            
+        Returns:
+            Dictionary with dates and total amounts
+        """
+        # Calculate the date range
+        end_date = timezone.now().date()
+        start_date = end_date - datetime.timedelta(days=days-1)
+        
+        # Get document types with symbols IC-, IP-, NN-, RW-
+        minus_symbols = ['IC-', 'IP-', 'NN-', 'RW-']
+        minus_types = DocumentType.objects.filter(symbol__in=minus_symbols)
+        
+        # Get documents within date range
+        minus_docs = Document.objects.filter(
+            document_type__in=minus_types,
+            created_at__date__gte=start_date,
+            created_at__date__lte=end_date
+        ).annotate(
+            date=TruncDate('created_at')
+        ).values('date').annotate(
+            total_amount=Sum('documentproduct__amount_required')
+        ).order_by('date')
+        
+        # Fill in missing dates with zeros
+        result = {}
+        current_date = start_date
+        while current_date <= end_date:
+            result[current_date] = 0
+            current_date += datetime.timedelta(days=1)
+        
+        # Update with actual data
+        for entry in minus_docs:
+            if entry['date'] in result:
+                result[entry['date']] = entry['total_amount'] or 0
+        
+        return result
+    
+    @staticmethod
+    def get_daily_fv_totals(days=30):
+        """
+        Get daily FV document total prices for the last specified days
+        
+        Args:
+            days: Number of days to look back (default: 30)
+            
+        Returns:
+            Dictionary with dates and total prices
+        """
+        # Calculate the date range
+        end_date = timezone.now().date()
+        start_date = end_date - datetime.timedelta(days=days-1)
+        
+        # Get FV document type
+        fv_type = DocumentType.objects.filter(symbol='FV').first()
+        
+        # Get FV documents within date range
+        if fv_type:
+            fv_docs = Document.objects.filter(
+                document_type=fv_type,
+                created_at__date__gte=start_date,
+                created_at__date__lte=end_date
+            ).annotate(
+                date=TruncDate('created_at')
+            ).values('date').annotate(
+                calculated_total_price=Sum(
+                    F('documentproduct__amount_required') * F('documentproduct__unit_price'),
+                    output_field=DecimalField()
+                )
+            ).order_by('date')
+        else:
+            fv_docs = []
+        
+        # Fill in missing dates with zeros
+        result = {}
+        current_date = start_date
+        while current_date <= end_date:
+            result[current_date] = 0
+            current_date += datetime.timedelta(days=1)
+        
+        # Update with actual data
+        for entry in fv_docs:
+            if entry['date'] in result:
+                result[entry['date']] = float(entry['calculated_total_price'] or 0)
+        
+        return result
+    
+    @staticmethod
+    def get_product_freshness():
+        """
+        Get product freshness breakdown (10+ days before BB, <10 days to BB, moldy)
+        
+        Returns:
+            Dictionary with counts for each freshness category
+        """
+        today = timezone.now().date()
+        ten_days_from_now = today + datetime.timedelta(days=10)
+        
+        inventory_items = Inventory.objects.all()
+        
+        # Count items in each category
+        fresh = inventory_items.filter(expiration_date__gt=ten_days_from_now).count()
+        expiring_soon = inventory_items.filter(
+            expiration_date__lte=ten_days_from_now,
+            expiration_date__gte=today
+        ).count()
+        expired = inventory_items.filter(expiration_date__lt=today).count()
+        
+        return {
+            '10+ days before BB': fresh,
+            'Less than 10 days to BB': expiring_soon,
+            'Expired/Moldy': expired
+        }
+
 class TopologyService:
     
     @staticmethod
