@@ -214,14 +214,8 @@ class AnalyticsService:
         
         # Get documents with total price > threshold
         suspicious_docs = Document.objects.filter(
-            document_type__in=suspicious_types
-        ).annotate(
-            calculated_total_price=Sum(
-                F('documentproduct__amount_required') * F('documentproduct__unit_price'),
-                output_field=DecimalField()
-            )
-        ).filter(
-            calculated_total_price__gt=price_threshold
+            document_type__in=suspicious_types,
+            total_price__gt=price_threshold
         ).order_by('-created_at')[:limit]
         
         return suspicious_docs

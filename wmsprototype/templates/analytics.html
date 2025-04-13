@@ -70,7 +70,7 @@
                                     <td>{{ doc.document_type.symbol }}</td>
                                     <td>{{ doc.created_at|date:"Y-m-d H:i" }}</td>
                                     <td>{{ doc.origin_department.name }}</td>
-                                    <td>{{ doc.calculated_total_price|floatformat:2 }}€</td>
+                                    <td>{{ doc.total_price }}€</td>
                                     <td>
                                         <a href="{% url 'view_document' doc.id %}" class="btn btn-sm btn-primary">View</a>
                                     </td>
